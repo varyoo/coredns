@@ -155,4 +155,5 @@ www.test        IN      CNAME   a.test
 
 dname           IN      DNAME   test
 dname           IN      A       127.0.0.1
+a.dname         IN      A       127.0.0.1
 `
