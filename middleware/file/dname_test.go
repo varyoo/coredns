@@ -55,6 +55,25 @@ var dnameTestCases = []test.Case{
 		},
 		Ns: miekAuth,
 	},
+	{
+		Qname: "a.dname.miek.nl.", Qtype: dns.TypeA,
+		Answer: []dns.RR{
+			test.CNAME("a.dname.miek.nl.	1800	IN	CNAME	a.test.miek.nl."),
+			test.A("a.test.miek.nl.	1800	IN	A	139.162.196.78"),
+			test.DNAME("dname.miek.nl.	1800	IN	DNAME	test.miek.nl."),
+		},
+		Ns: miekAuth,
+	},
+	{
+		Qname: "www.dname.miek.nl.", Qtype: dns.TypeA,
+		Answer: []dns.RR{
+			test.A("a.test.miek.nl.	1800	IN	A	139.162.196.78"),
+			test.DNAME("dname.miek.nl.	1800	IN	DNAME	test.miek.nl."),
+			test.CNAME("www.dname.miek.nl.	1800	IN	CNAME	www.test.miek.nl."),
+			test.CNAME("www.test.miek.nl.	1800	IN	CNAME	a.test.miek.nl."),
+		},
+		Ns: miekAuth,
+	},
 }
 
 func TestLookupDNAME(t *testing.T) {

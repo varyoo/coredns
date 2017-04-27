@@ -19,3 +19,26 @@ func substituteDNAME(qname, owner, target string) string {
 
 	return ""
 }
+
+// synthesizeCNAME returns a CNAME RR pointing to the resulting name of
+// the DNAME substitution. The owner name of the CNAME is the QNAME of
+// the query and the TTL is the same as the corresponding DNAME RR.
+//
+// It returns nil if the DNAME substitution has no match.
+func synthesizeCNAME(qname string, d *dns.DNAME) *dns.CNAME {
+	target := substituteDNAME(qname, d.Header().Name, d.Target)
+	if target == "" {
+		return nil
+	}
+
+	r := new(dns.CNAME)
+	r.Hdr = dns.RR_Header{
+		Name:   qname,
+		Rrtype: dns.TypeCNAME,
+		Class:  dns.ClassINET,
+		Ttl:    d.Header().Ttl,
+	}
+	r.Target = target
+
+	return r
+}
