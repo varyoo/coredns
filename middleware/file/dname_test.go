@@ -56,6 +56,20 @@ var dnameTestCases = []test.Case{
 		Ns: miekAuth,
 	},
 	{
+		Qname: "dname.miek.nl.", Qtype: dns.TypeA,
+		Answer: []dns.RR{
+			test.A("dname.miek.nl.	1800	IN	A	127.0.0.1"),
+		},
+		Ns: miekAuth,
+	},
+	{
+		Qname: "dname.miek.nl.", Qtype: dns.TypeMX,
+		Answer: []dns.RR{},
+		Ns: []dns.RR{
+			test.SOA("miek.nl.	1800	IN	SOA	linode.atoom.net. miek.miek.nl. 1282630057 14400 3600 604800 14400"),
+		},
+	},
+	{
 		Qname: "a.dname.miek.nl.", Qtype: dns.TypeA,
 		Answer: []dns.RR{
 			test.CNAME("a.dname.miek.nl.	1800	IN	CNAME	a.test.miek.nl."),
@@ -139,4 +153,6 @@ a.test          IN      A       139.162.196.78
                 IN      AAAA    2a01:7e00::f03c:91ff:fef1:6735
 www.test        IN      CNAME   a.test
 
-dname           IN      DNAME   test`
+dname           IN      DNAME   test
+dname           IN      A       127.0.0.1
+`
