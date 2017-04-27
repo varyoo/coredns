@@ -12,6 +12,41 @@ import (
 	"golang.org/x/net/context"
 )
 
+// RFC 6672, Section 2.2. Assuming QTYPE != DNAME.
+var dnameSubstitutionTestCases = []struct {
+	qname    string
+	owner    string
+	target   string
+	expected string
+}{
+	{"com.", "example.com.", "example.net.", ""},
+	{"example.com.", "example.com.", "example.net.", ""},
+	{"a.example.com.", "example.com.", "example.net.", "a.example.net."},
+	{"a.b.example.com.", "example.com.", "example.net.", "a.b.example.net."},
+	{"ab.example.com.", "b.example.com.", "example.net.", ""},
+	{"foo.example.com.", "example.com.", "example.net.", "foo.example.net."},
+	{"a.x.example.com.", "x.example.com.", "example.net.", "a.example.net."},
+	{"a.example.com.", "example.com.", "y.example.net.", "a.y.example.net."},
+	{"cyc.example.com.", "example.com.", "example.com.", "cyc.example.com."},
+	{"cyc.example.com.", "example.com.", "c.example.com.", "cyc.c.example.com."},
+	{"shortloop.x.x.", "x.", ".", "shortloop.x."},
+	{"shortloop.x.", "x.", ".", "shortloop."},
+}
+
+func TestDNAMESubstitution(t *testing.T) {
+	for _, tc := range dnameSubstitutionTestCases {
+		result := substituteDNAME(tc.qname, tc.owner, tc.target)
+		if result != tc.expected {
+			if result == "" {
+				result = "<no match>"
+			}
+
+			t.Errorf("Expected %s -> %s, got %v", tc.qname, tc.expected, result)
+			return
+		}
+	}
+}
+
 var dnameTestCases = []test.Case{
 	{
 		Qname: "dname.miek.nl.", Qtype: dns.TypeDNAME,
