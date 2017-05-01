@@ -34,14 +34,14 @@ var dnameSubstitutionTestCases = []struct {
 }
 
 func TestDNAMESubstitution(t *testing.T) {
-	for _, tc := range dnameSubstitutionTestCases {
+	for i, tc := range dnameSubstitutionTestCases {
 		result := substituteDNAME(tc.qname, tc.owner, tc.target)
 		if result != tc.expected {
 			if result == "" {
 				result = "<no match>"
 			}
 
-			t.Errorf("Expected %s -> %s, got %v", tc.qname, tc.expected, result)
+			t.Errorf("Case %d: Expected %s -> %s, got %v", i, tc.qname, tc.expected, result)
 			return
 		}
 	}
