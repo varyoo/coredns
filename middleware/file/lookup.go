@@ -48,12 +48,24 @@ func (z *Zone) Lookup(state request.Request, qname string) ([]dns.RR, []dns.RR, 
 		return nsrrs, nil, glue, Success
 	}
 
+	// Invoke DNAME redirection, if any
+	for _, dname := range z.dnames {
+		if cname := synthesizeCNAME(qname, dname); cname != nil {
+			answer, ns, extra, rcode := z.searchCNAME(state, nil, []dns.RR{cname})
+
+			// The relevant DNAME RR should be included in the answer section,
+			// if The DNAME is being employed as a substitution instruction.
+			answer = append([]dns.RR{dname}, answer...)
+
+			return answer, ns, extra, rcode
+		}
+	}
+
 	var (
 		found, shot    bool
 		parts          string
 		i              int
 		elem, wildElem *tree.Elem
-		dname          *dns.DNAME
 	)
 
 	// Lookup:
@@ -79,15 +91,6 @@ func (z *Zone) Lookup(state request.Request, qname string) ([]dns.RR, []dns.RR, 
 
 		elem, found = z.Tree.Search(parts)
 		if !found {
-			// Look to see whether the last label matched has a DNAME record.
-			if i, shot := dns.NextLabel(qname, 0); !shot {
-				if e, ok := z.Tree.Search(qname[i:]); ok {
-					if rrs := e.Types(dns.TypeDNAME, qname[i:]); len(rrs) > 0 {
-						dname = rrs[0].(*dns.DNAME)
-					}
-				}
-			}
-
 			// Apex will always be found, when we are here we can search for a wildcard
 			// and save the result of that search. So when nothing match, but we have a
 			// wildcard we should expand the wildcard. There can only be one wildcard,
@@ -164,19 +167,6 @@ func (z *Zone) Lookup(state request.Request, qname string) ([]dns.RR, []dns.RR, 
 	}
 
 	// Haven't found the original name.
-
-	// Found DNAME.
-	if dname != nil {
-		if cname := synthesizeCNAME(qname, dname); cname != nil {
-			answer, ns, extra, rcode := z.searchCNAME(state, nil, []dns.RR{cname})
-
-			// The relevant DNAME RR should be included in the answer section,
-			// if The DNAME is being employed as a substitution instruction.
-			answer = append([]dns.RR{dname}, answer...)
-
-			return answer, ns, extra, rcode
-		}
-	}
 
 	// Found wildcard.
 	if wildElem != nil {

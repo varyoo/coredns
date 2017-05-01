@@ -112,7 +112,6 @@ func (f File) Name() string { return "file" }
 func Parse(f io.Reader, origin, fileName string) (*Zone, error) {
 	tokens := dns.ParseZone(f, dns.Fqdn(origin), fileName)
 	z := NewZone(origin, fileName)
-	var dnames []string
 	for x := range tokens {
 		if x.Error != nil {
 			log.Printf("[ERROR] Failed to parse `%s': %v", origin, x.Error)
@@ -123,17 +122,7 @@ func Parse(f io.Reader, origin, fileName string) (*Zone, error) {
 		}
 
 		if x.RR.Header().Rrtype == dns.TypeDNAME {
-			dnames = append(dnames, x.RR.Header().Name)
-		}
-	}
-	// Resource records MUST NOT exist at any subdomain of the owner of a
-	// DNAME RR. Those names below the DNAME RR will be ignored.
-	for _, dname := range dnames {
-		for _, r := range z.All() {
-			rname := r.Header().Name
-			if dns.IsSubDomain(dname, rname) && dname != rname {
-				z.Delete(r)
-			}
+			z.dnames = append(z.dnames, x.RR.(*dns.DNAME))
 		}
 	}
 	return z, nil
