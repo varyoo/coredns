@@ -48,19 +48,6 @@ func (z *Zone) Lookup(state request.Request, qname string) ([]dns.RR, []dns.RR, 
 		return nsrrs, nil, glue, Success
 	}
 
-	// Invoke DNAME redirection, if any
-	for _, dname := range z.dnames {
-		if cname := synthesizeCNAME(qname, dname); cname != nil {
-			answer, ns, extra, rcode := z.searchCNAME(state, nil, []dns.RR{cname})
-
-			// The relevant DNAME RR should be included in the answer section,
-			// if The DNAME is being employed as a substitution instruction.
-			answer = append([]dns.RR{dname}, answer...)
-
-			return answer, ns, extra, rcode
-		}
-	}
-
 	var (
 		found, shot    bool
 		parts          string
@@ -135,7 +122,13 @@ func (z *Zone) Lookup(state request.Request, qname string) ([]dns.RR, []dns.RR, 
 	// Found entire name.
 	if found && shot {
 
-		// DNAME...?
+		// Ignore records at any subdomain of the owner of a DNAME RR.
+		if z.hasDNAME && qtype != dns.TypeDNAME {
+			if answer, ns, extra, rcode := z.searchDNAME(state); answer != nil {
+				return answer, ns, extra, rcode
+			}
+		}
+
 		if rrs := elem.Types(dns.TypeCNAME); len(rrs) > 0 && qtype != dns.TypeCNAME {
 			return z.searchCNAME(state, elem, rrs)
 		}
@@ -167,6 +160,11 @@ func (z *Zone) Lookup(state request.Request, qname string) ([]dns.RR, []dns.RR, 
 	}
 
 	// Haven't found the original name.
+
+	// Invoke DNAME redirection, if any.
+	if z.hasDNAME {
+		return z.searchDNAME(state)
+	}
 
 	// Found wildcard.
 	if wildElem != nil {
@@ -270,6 +268,24 @@ func (z *Zone) ns(do bool) []dns.RR {
 		return ret
 	}
 	return z.Apex.NS
+}
+
+func (z *Zone) searchDNAME(state request.Request) ([]dns.RR, []dns.RR, []dns.RR, Result) {
+	for _, elem := range z.Tree.All() {
+		for _, dname := range elem.Types(dns.TypeDNAME) {
+			if cname := synthesizeCNAME(state.Name(), dname.(*dns.DNAME)); cname != nil {
+				answer, ns, extra, rcode := z.searchCNAME(state, elem, []dns.RR{cname})
+
+				// The relevant DNAME RR should be included in the answer section,
+				// if The DNAME is being employed as a substitution instruction.
+				answer = append([]dns.RR{dname}, answer...)
+
+				return answer, ns, extra, rcode
+			}
+		}
+	}
+
+	return nil, z.ns(state.Do()), nil, NameError
 }
 
 // TODO(miek): should be better named, like aditionalProcessing?

@@ -122,7 +122,7 @@ func Parse(f io.Reader, origin, fileName string) (*Zone, error) {
 		}
 
 		if x.RR.Header().Rrtype == dns.TypeDNAME {
-			z.dnames = append(z.dnames, x.RR.(*dns.DNAME))
+			z.hasDNAME = true
 		}
 	}
 	return z, nil
