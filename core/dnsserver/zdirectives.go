@@ -38,4 +38,5 @@ var directives = []string{
 	"erratic",
 	"startup",
 	"shutdown",
+	"dnstap",
 }
