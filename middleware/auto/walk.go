@@ -45,9 +45,9 @@ func (a Auto) Walk() error {
 		}
 		defer reader.Close()
 
-		zo, err := file.Parse(reader, origin, path)
+		zo, err := file.Parse(reader, origin, path, 0)
 		if err != nil {
-			// Parse barfs warning by itself...
+			log.Printf("[ERROR] Failed to parse `%s': %v", z.origin, err)
 			return nil
 		}
 

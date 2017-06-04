@@ -177,7 +177,8 @@ func (z *Zone) Reload() error {
 						log.Printf("[ERROR] Failed to open `%s' for `%s': %v", z.file, z.origin, err)
 						continue
 					}
-					zone, err := Parse(reader, z.origin, z.file)
+
+					zone, err := Parse(reader, z.origin, z.file, 0)
 					if err != nil {
 						log.Printf("[ERROR] Failed to parse `%s': %v", z.origin, err)
 						continue

@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ func TestZoneReload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open zone: %s", err)
 	}
-	z, err := Parse(reader, "miek.nl", fileName)
+	z, err := Parse(reader, "miek.nl", fileName, 0)
 	if err != nil {
 		t.Fatalf("failed to parse zone: %s", err)
 	}
@@ -58,6 +59,14 @@ func TestZoneReload(t *testing.T) {
 	if len(z.All()) != 3 {
 		t.Fatalf("expected 3 RRs, got %d", len(z.All()))
 	}
+}
+
+func TestZoneReloadSOAChange(t *testing.T) {
+	z, _ := Parse(strings.NewReader(reloadZoneTest), "miek.nl.", "stdin", 1460175181)
+	if z != nil {
+		t.Fatal("zone should not have been parsed")
+	}
+
 }
 
 const reloadZoneTest = `miek.nl.		1627	IN	SOA	linode.atoom.net. miek.miek.nl. 1460175181 14400 3600 604800 14400

@@ -109,14 +109,25 @@ func (f File) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (i
 func (f File) Name() string { return "file" }
 
 // Parse parses the zone in filename and returns a new Zone or an error.
-func Parse(f io.Reader, origin, fileName string) (*Zone, error) {
+// If serial >= 0 it will not reload the zone.
+func Parse(f io.Reader, origin, fileName string, serial int64) (*Zone, error) {
 	tokens := dns.ParseZone(f, dns.Fqdn(origin), fileName)
 	z := NewZone(origin, fileName)
+	seenSOA := false
 	for x := range tokens {
 		if x.Error != nil {
-			log.Printf("[ERROR] Failed to parse `%s': %v", origin, x.Error)
 			return nil, x.Error
 		}
+
+		if !seenSOA && serial >= 0 {
+			if s, ok := x.RR.(*dns.SOA); ok {
+				if s.Serial == uint32(serial) { // same zone
+					return nil, nil
+				}
+			}
+			seenSOA = true
+		}
+
 		if err := z.Insert(x.RR); err != nil {
 			return nil, err
 		}
