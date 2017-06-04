@@ -47,7 +47,7 @@ func (a Auto) Walk() error {
 
 		zo, err := file.Parse(reader, origin, path, 0)
 		if err != nil {
-			log.Printf("[ERROR] Failed to parse `%s': %v", z.origin, err)
+			log.Printf("[ERROR] Failed to parse `%s': %v", origin, err)
 			return nil
 		}
 
