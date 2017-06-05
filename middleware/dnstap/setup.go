@@ -3,6 +3,7 @@ package dnstap
 import (
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
+	lib "github.com/dnstap/golang-dnstap"
 	"github.com/mholt/caddy"
 )
 
@@ -18,8 +19,24 @@ func setup(c *caddy.Controller) error {
 		return middleware.Error("dnstap", c.ArgErr())
 	}
 
+	tap := Dnstap{}
+	out, err := lib.NewFrameStreamOutputFromFilename("/tmp/db")
+	if err != nil {
+		panic(err)
+		return err
+	}
+	tap.out = out
+
+	go out.RunOutputLoop()
+
+	c.OnShutdown(func() error {
+		out.Close()
+		return nil
+	})
+
 	dnsserver.GetConfig(c).AddMiddleware(func(next middleware.Handler) middleware.Handler {
-		return Dnstap{Next: next}
+		tap.Next = next
+		return tap
 	})
 
 	return nil

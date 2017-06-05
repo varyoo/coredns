@@ -21,6 +21,7 @@ var directives = []string{
 	"prometheus",
 	"errors",
 	"log",
+	"dnstap",
 	"chaos",
 	"cache",
 	"rewrite",
@@ -38,5 +39,4 @@ var directives = []string{
 	"erratic",
 	"startup",
 	"shutdown",
-	"dnstap",
 }
