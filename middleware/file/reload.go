@@ -38,7 +38,7 @@ func (z *Zone) Reload() error {
 					serial := z.SOASerialIfDefined()
 					zone, err := Parse(reader, z.origin, z.file, serial)
 					if err != nil {
-						log.Printf("[ERROR] Failed to parse `%s': %v", z.origin, err)
+						log.Printf("[WARNING] Parsing zone `%s': %v", z.origin, err)
 						continue
 					}
 

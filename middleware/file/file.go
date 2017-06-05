@@ -3,6 +3,7 @@ package file
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 
@@ -109,7 +110,8 @@ func (f File) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (i
 func (f File) Name() string { return "file" }
 
 // Parse parses the zone in filename and returns a new Zone or an error.
-// If serial >= 0 it will not reload the zone.
+// If serial >= 0 it will not reload the zone, it returns an error indicating, nothing
+// was read.
 func Parse(f io.Reader, origin, fileName string, serial int64) (*Zone, error) {
 	tokens := dns.ParseZone(f, dns.Fqdn(origin), fileName)
 	z := NewZone(origin, fileName)
@@ -122,7 +124,7 @@ func Parse(f io.Reader, origin, fileName string, serial int64) (*Zone, error) {
 		if !seenSOA && serial >= 0 {
 			if s, ok := x.RR.(*dns.SOA); ok {
 				if s.Serial == uint32(serial) { // same zone
-					return nil, nil
+					return nil, fmt.Errorf("no change in seral: %d", serial)
 				}
 			}
 			seenSOA = true
