@@ -35,7 +35,7 @@ func (z *Zone) Reload() error {
 						continue
 					}
 
-					serial = z.SOASerialIfDefined()
+					serial := z.SOASerialIfDefined()
 					zone, err := Parse(reader, z.origin, z.file, serial)
 					if err != nil {
 						log.Printf("[ERROR] Failed to parse `%s': %v", z.origin, err)
@@ -66,7 +66,7 @@ func (z *Zone) SOASerialIfDefined() int64 {
 	z.reloadMu.Lock()
 	defer z.reloadMu.Unlock()
 	if z.Apex.SOA != nil {
-		return z.Apex.SOA.Serial
+		return int64(z.Apex.SOA.Serial)
 	}
 	return -1
 }
