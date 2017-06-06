@@ -6,18 +6,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-func wrap(m *lib.Message) lib.Dnstap {
+func wrap(m *lib.Message) *lib.Dnstap {
 	t := lib.Dnstap_MESSAGE
-	w := lib.Dnstap{
+	return &lib.Dnstap{
 		Type:    &t,
 		Message: m,
 	}
-	return w
 }
 
-func Marshal(m *Msg) (data []byte, err error) {
-	event := wrap(&m.Message)
-	data, err = proto.Marshal(&event)
+func Marshal(m *lib.Message) (data []byte, err error) {
+	data, err = proto.Marshal(wrap(m))
 	if err != nil {
 		err = errors.Wrap(err, "proto")
 		return

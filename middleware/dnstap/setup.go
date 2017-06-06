@@ -5,6 +5,7 @@ import (
 	"github.com/coredns/coredns/middleware"
 	lib "github.com/dnstap/golang-dnstap"
 	"github.com/mholt/caddy"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -22,8 +23,7 @@ func setup(c *caddy.Controller) error {
 	tap := Dnstap{}
 	out, err := lib.NewFrameStreamOutputFromFilename("/tmp/db")
 	if err != nil {
-		panic(err)
-		return err
+		return errors.Wrap(err, "output")
 	}
 	tap.out = out
 

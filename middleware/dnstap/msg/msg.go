@@ -8,16 +8,37 @@ import (
 )
 
 type Msg struct {
-	lib.Message
+	Type        lib.Message_Type
+	Packed      []byte
+	SocketProto lib.SocketProtocol
+	SocketFam   lib.SocketFamily
+	Address     []byte
+	Port        uint32
+	TimeSec     uint64
 }
 
-func setType(m *lib.Message, t lib.Message_Type) {
-	m.Type = &t
+func now(m *Msg) {
+	m.TimeSec = uint64(time.Now().Unix())
 }
 
-func NewClientResponse(state *request.Request, pack bool) (*Msg, error) {
-	m := lib.Message{}
-	if err := networkFromRequest(&m, state); err != nil {
+func toResp(m *Msg) *lib.Message {
+	return &lib.Message{
+		Type:            &m.Type,
+		ResponseMessage: m.Packed,
+		SocketFamily:    &m.SocketFam,
+		SocketProtocol:  &m.SocketProto,
+		QueryAddress:    m.Address,
+		QueryPort:       &m.Port,
+	}
+}
+
+func NewClientResponse(state *request.Request, pack bool) (
+	*lib.Message, error) {
+
+	m := &Msg{
+		Type: lib.Message_CLIENT_RESPONSE,
+	}
+	if err := networkFromRequest(m, state); err != nil {
 		return nil, errors.Wrap(err, "network")
 	}
 	if pack {
@@ -25,44 +46,33 @@ func NewClientResponse(state *request.Request, pack bool) (*Msg, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "pack")
 		}
-		m.ResponseMessage = data
+		m.Packed = data
 	}
-	setType(&m, lib.Message_CLIENT_RESPONSE)
-	socket(&m, state)
-	timeSec(&m.ResponseTimeSec)
-	return &Msg{m}, nil
+	socket(m, state)
+	now(m)
+	return toResp(m), nil
 }
 func timeSec(dest **uint64) {
 	buf := uint64(time.Now().Unix())
 	*dest = &buf
 }
-func socket(m *lib.Message, r *request.Request) {
-	fam := lib.SocketFamily_INET
+func socket(m *Msg, r *request.Request) {
+	m.SocketFam = lib.SocketFamily_INET
 	if r.Family() == 2 {
-		fam = lib.SocketFamily_INET6
+		m.SocketFam = lib.SocketFamily_INET6
 	}
-	m.SocketFamily = &fam
 
-	proto := lib.SocketProtocol_UDP
+	m.SocketProto = lib.SocketProtocol_UDP
 	if r.Proto() == "tcp" {
-		proto = lib.SocketProtocol_TCP
+		m.SocketProto = lib.SocketProtocol_TCP
 	}
-	m.SocketProtocol = &proto
 }
-func networkFromRequest(m *lib.Message, r *request.Request) error {
-	rip, rp, err := ipPort(r.W.LocalAddr())
+func networkFromRequest(m *Msg, r *request.Request) error {
+	ip, port, err := ipPort(r.W.RemoteAddr())
 	if err != nil {
 		return errors.Wrap(err, "response host")
 	}
-	m.ResponsePort = &rp
-	m.ResponseAddress = rip
-
-	qip, qp, err := ipPort(r.W.RemoteAddr())
-	if err != nil {
-		return errors.Wrap(err, "query host")
-	}
-	m.QueryPort = &qp
-	m.QueryAddress = qip
-
+	m.Address = ip
+	m.Port = port
 	return nil
 }
