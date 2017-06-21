@@ -1,9 +1,10 @@
 package msg
 
 import (
-	"github.com/pkg/errors"
 	"net"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 func parsePort(raw string) (uint32, error) {

@@ -1,6 +1,9 @@
 # Directive
 
-`dnstap /tmp/db true`: directive name, dnstap binary database path, report the wire-format dns message (true/false).
+`dnstap SOCKET FULL`
+
+* `SOCKET` ex: `/tmp/dnstap.sock`
+* `FULL` report the wire-format DNS message, ex: `true`
 
 # dnstap command line tool
 
@@ -8,15 +11,9 @@
 go get github.com/dnstap/golang-dnstap
 cd $GOPATH/src/github.com/dnstap/golang-dnstap/dnstap
 go build
-./dnstap -r /tmp/db
-./dnstap -r /tmp/db -y
+./dnstap -u /tmp/dnstap.sock
+./dnstap -u /tmp/dnstap.sock -y
 ```
 
-# dndstap binary database VS socket
-
-The database can become hudge with time, and cannot be cleared while the server is running that
-easly. This is why I believe the socket is prefered.
-
-However the dnstap golang library https://github.com/dnstap/golang-dnstap dosen't support yet bidirectional framestreams.
-Which are used when reading a socket by the dnstap tool, so before it can be used in the middleware, I will have to work on adding a bidirectional encoder into the golang library...
-https://github.com/farsightsec/golang-framestream/issues/1
+There is a buffer, expect at least 13 requests before the server sends its dnstap messages to
+though socket.

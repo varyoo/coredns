@@ -1,12 +1,14 @@
-// Packag msg helps to build a dnstap Message.
+// Package msg helps to build a dnstap Message.
 package msg
 
 import (
+	"time"
+
 	"github.com/coredns/coredns/request"
+
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // Data helps to build a dnstap Message.
@@ -57,7 +59,7 @@ func ToMsg(d *Data) *tap.Message {
 		m.QueryTimeSec = &d.TimeSec
 		m.QueryMessage = d.Packed
 	default:
-		// is reponse
+		// is response
 		m.ResponseTimeSec = &d.TimeSec
 		m.ResponseMessage = d.Packed
 	}

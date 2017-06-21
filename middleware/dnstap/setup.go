@@ -1,13 +1,14 @@
 package dnstap
 
 import (
+	"strconv"
+
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
 	"github.com/coredns/coredns/middleware/dnstap/out"
+
 	"github.com/mholt/caddy"
 	"github.com/pkg/errors"
-	"os"
-	"strconv"
 )
 
 func init() {
@@ -40,19 +41,14 @@ func setup(c *caddy.Controller) error {
 
 	clientTap := ClientTap{Pack: pack}
 
-	w, err := os.Create(path)
-	if err != nil {
-		return errors.Wrap(err, "create db")
-	}
-	o, err := out.NewOutput(w)
+	o, err := out.NewSocket(path)
 	if err != nil {
 		return errors.Wrap(err, "output")
 	}
 	clientTap.Out = o
 
 	c.OnShutdown(func() error {
-		o.Close()
-		return nil
+		return errors.Wrap(o.Close(), "output")
 	})
 
 	dnsserver.GetConfig(c).AddMiddleware(
