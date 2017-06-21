@@ -1,13 +1,15 @@
 package dnstap
 
 import (
+	"golang.org/x/net/context"
+	"io"
+
 	"github.com/coredns/coredns/middleware"
 	"github.com/coredns/coredns/middleware/dnstap/msg"
+
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
-	"io"
 )
 
 type ClientTap struct {

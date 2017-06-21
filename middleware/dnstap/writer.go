@@ -1,12 +1,14 @@
 package dnstap
 
 import (
+	"log"
+
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
+
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
-	"log"
 )
 
 type Tap interface {
