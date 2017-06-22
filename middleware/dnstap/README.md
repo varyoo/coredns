@@ -1,9 +1,9 @@
 # Directive
 
-`dnstap SOCKET FULL`
+`dnstap /tmp/dnstap.sock true`
 
-* `SOCKET` ex: `/tmp/dnstap.sock`
-* `FULL` report the wire-format DNS message, ex: `true`
+* Socket path
+* Report the wire-format DNS message.
 
 # dnstap command line tool
 
@@ -15,5 +15,4 @@ go build
 ./dnstap -u /tmp/dnstap.sock -y
 ```
 
-There is a buffer, expect at least 13 requests before the server sends its dnstap messages to
-though socket.
+There is a buffer, expect at least 13 requests before the server sends its dnstap messages to the socket.

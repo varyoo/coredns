@@ -31,10 +31,6 @@ func openSocket(s *Socket) error {
 	return nil
 }
 
-func closeSocket(s *Socket) error {
-	return s.conn.Close()
-}
-
 func NewSocket(path string) (*Socket, error) {
 	s := Socket{path: path}
 	if err := openSocket(&s); err != nil {
@@ -53,7 +49,7 @@ func (s *Socket) Write(frame []byte) (int, error) {
 	n, err := s.enc.Write(frame)
 	if err != nil {
 		// the dnstap command line tool is down
-		closeSocket(s)
+		s.conn.Close()
 		s.err = err
 		return 0, err
 	}
@@ -61,15 +57,19 @@ func (s *Socket) Write(frame []byte) (int, error) {
 
 }
 func (s *Socket) Close() error {
-	if s.err == nil {
-		err := s.enc.Flush()
-		if err != nil {
-			return errors.Wrap(err, "flush")
-		}
-		err = s.enc.Close()
-		if err != nil {
-			return err
-		}
+	if s.err != nil {
+		// nothing to close
+		return nil
 	}
+
+	defer s.conn.Close()
+
+	if err := s.enc.Flush(); err != nil {
+		return errors.Wrap(err, "flush")
+	}
+	if err := s.enc.Close(); err != nil {
+		return err
+	}
+
 	return nil
 }
