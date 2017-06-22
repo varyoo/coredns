@@ -25,7 +25,7 @@ type Data struct {
 
 func FromRequest(d *Data, r request.Request) error {
 	if err := networkFromWriter(d, r.W); err != nil {
-		return errors.Wrap(err, "network")
+		return err
 	}
 	socket(d, &r)
 	return nil
