@@ -43,6 +43,8 @@ func Pack(d *Data, m *dns.Msg) error {
 func Epoch(d *Data) {
 	d.TimeSec = uint64(time.Now().Unix())
 }
+
+// Transform the data into the actual message based on the type.
 func ToMsg(d *Data) *tap.Message {
 	m := tap.Message{
 		Type:           &d.Type,
@@ -78,6 +80,36 @@ func ToMsg(d *Data) *tap.Message {
 	}
 
 	return &m
+}
+
+// Transform the data into a client response message.
+// Alternative to ToMsg.
+func ToClientResponse(d *Data) *tap.Message {
+	d.Type = tap.Message_CLIENT_RESPONSE
+	return &tap.Message{
+		Type:            &d.Type,
+		SocketFamily:    &d.SocketFam,
+		SocketProtocol:  &d.SocketProto,
+		ResponseTimeSec: &d.TimeSec,
+		ResponseMessage: d.Packed,
+		QueryAddress:    d.Address,
+		QueryPort:       &d.Port,
+	}
+}
+
+// Transform the data into a client query message.
+// Alternative to ToMsg.
+func ToClientQuery(d *Data) *tap.Message {
+	d.Type = tap.Message_CLIENT_QUERY
+	return &tap.Message{
+		Type:           &d.Type,
+		SocketFamily:   &d.SocketFam,
+		SocketProtocol: &d.SocketProto,
+		QueryTimeSec:   &d.TimeSec,
+		QueryMessage:   d.Packed,
+		QueryAddress:   d.Address,
+		QueryPort:      &d.Port,
+	}
 }
 
 func socket(d *Data, r *request.Request) {
