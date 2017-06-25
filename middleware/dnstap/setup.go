@@ -39,13 +39,13 @@ func setup(c *caddy.Controller) error {
 		return c.ArgErr()
 	}
 
-	clientTap := ClientTap{Pack: pack}
+	dnstap := Dnstap{Pack: pack}
 
 	o, err := out.NewSocket(path)
 	if err != nil {
 		return errors.Wrap(err, "output")
 	}
-	clientTap.Out = o
+	dnstap.Out = o
 
 	c.OnShutdown(func() error {
 		return errors.Wrap(o.Close(), "output")
@@ -53,8 +53,8 @@ func setup(c *caddy.Controller) error {
 
 	dnsserver.GetConfig(c).AddMiddleware(
 		func(next middleware.Handler) middleware.Handler {
-			clientTap.Next = next
-			return clientTap
+			dnstap.Next = next
+			return dnstap
 		})
 
 	return nil
