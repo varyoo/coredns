@@ -2,6 +2,7 @@
 package msg
 
 import (
+	"net"
 	"time"
 
 	"github.com/coredns/coredns/request"
@@ -24,10 +25,27 @@ type Data struct {
 }
 
 func FromRequest(d *Data, r request.Request) error {
-	if err := networkFromWriter(d, r.W); err != nil {
-		return err
+	switch addr := r.W.RemoteAddr().(type) {
+	case *net.TCPAddr:
+		d.Address = addr.IP
+		d.Port = uint32(addr.Port)
+	case *net.UDPAddr:
+		d.Address = addr.IP
+		d.Port = uint32(addr.Port)
+	default:
+		return errors.New("unknown remote address type")
 	}
-	socket(d, &r)
+
+	d.SocketFam = tap.SocketFamily_INET
+	if r.Family() == 2 {
+		d.SocketFam = tap.SocketFamily_INET6
+	}
+
+	d.SocketProto = tap.SocketProtocol_UDP
+	if r.Proto() == "tcp" {
+		d.SocketProto = tap.SocketProtocol_TCP
+	}
+
 	return nil
 }
 
@@ -60,10 +78,16 @@ func ToMsg(d *Data) *tap.Message {
 		// is query
 		m.QueryTimeSec = &d.TimeSec
 		m.QueryMessage = d.Packed
-	default:
+	case tap.Message_CLIENT_RESPONSE,
+		tap.Message_RESOLVER_RESPONSE,
+		tap.Message_AUTH_RESPONSE,
+		tap.Message_FORWARDER_RESPONSE,
+		tap.Message_TOOL_RESPONSE:
 		// is response
 		m.ResponseTimeSec = &d.TimeSec
 		m.ResponseMessage = d.Packed
+	default:
+		panic("dnstap messsage type unknown")
 	}
 
 	// get the remote address and port depending on the event type
@@ -110,25 +134,4 @@ func ToClientQuery(d *Data) *tap.Message {
 		QueryAddress:   d.Address,
 		QueryPort:      &d.Port,
 	}
-}
-
-func socket(d *Data, r *request.Request) {
-	d.SocketFam = tap.SocketFamily_INET
-	if r.Family() == 2 {
-		d.SocketFam = tap.SocketFamily_INET6
-	}
-
-	d.SocketProto = tap.SocketProtocol_UDP
-	if r.Proto() == "tcp" {
-		d.SocketProto = tap.SocketProtocol_TCP
-	}
-}
-func networkFromWriter(d *Data, w dns.ResponseWriter) error {
-	ip, port, err := ipPort(w.RemoteAddr())
-	if err != nil {
-		return errors.Wrap(err, "response host")
-	}
-	d.Address = ip
-	d.Port = port
-	return nil
 }

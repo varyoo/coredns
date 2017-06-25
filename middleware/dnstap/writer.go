@@ -1,8 +1,6 @@
 package dnstap
 
 import (
-	"log"
-
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
@@ -11,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Tap interface {
+type Taper interface {
 	TapMessage(m *tap.Message) error
 }
 
@@ -19,8 +17,15 @@ type ResponseWriter struct {
 	queryData msg.Data
 	Query     *dns.Msg
 	dns.ResponseWriter
-	Tap
+	Taper
 	Pack bool
+	err  error
+}
+
+// Check if a dnstap error occured.
+// Set during ResponseWriter.Write.
+func DnstapError(w ResponseWriter) error {
+	return w.err
 }
 
 func (w ResponseWriter) QueryEpoch() {
@@ -29,23 +34,25 @@ func (w ResponseWriter) QueryEpoch() {
 
 // Write back the response to the client and THEN work on logging the request
 // and response to dnstap.
-// Not sure on how to best report errors with this approch.
+// Dnstap errors to be checked by DnstapError.
 func (w ResponseWriter) WriteMsg(resp *dns.Msg) error {
 	writeErr := w.ResponseWriter.WriteMsg(resp)
 
-	if err := w.tapQuery(); err != nil {
-		log.Printf("[ERROR] can't log client query: %s", err)
+	if err := tapQuery(w); err != nil {
+		w.err = errors.Wrap(err, "can't log client query")
+		// don't forget to call DnstapError later
 	}
 
-	if err := w.tapResponse(resp); err != nil {
-		log.Printf("[ERROR] can't log client response: %s", err)
+	if writeErr == nil {
+		if err := tapResponse(w, resp); err != nil {
+			w.err = errors.Wrap(err, "can't log client response")
+		}
 	}
 
 	return writeErr
 }
-func (w ResponseWriter) tapQuery() error {
-	w.queryData.Type = tap.Message_CLIENT_QUERY
-	req := request.Request{W: w, Req: w.Query}
+func tapQuery(w ResponseWriter) error {
+	req := request.Request{W: w.ResponseWriter, Req: w.Query}
 	if err := msg.FromRequest(&w.queryData, req); err != nil {
 		return err
 	}
@@ -54,15 +61,11 @@ func (w ResponseWriter) tapQuery() error {
 			return errors.Wrap(err, "pack")
 		}
 	}
-	return errors.Wrap(
-		w.Tap.TapMessage(msg.ToMsg(&w.queryData)),
-		"tap",
-	)
+	return w.Taper.TapMessage(msg.ToClientQuery(&w.queryData))
 }
-func (w ResponseWriter) tapResponse(resp *dns.Msg) error {
+func tapResponse(w ResponseWriter, resp *dns.Msg) error {
 	d := &msg.Data{}
 	msg.Epoch(d)
-	d.Type = tap.Message_CLIENT_RESPONSE
 	req := request.Request{W: w, Req: resp}
 	if err := msg.FromRequest(d, req); err != nil {
 		return err
@@ -72,8 +75,5 @@ func (w ResponseWriter) tapResponse(resp *dns.Msg) error {
 			return errors.Wrap(err, "pack")
 		}
 	}
-	return errors.Wrap(
-		w.Tap.TapMessage(msg.ToMsg(d)),
-		"tap",
-	)
+	return w.Taper.TapMessage(msg.ToClientResponse(d))
 }
