@@ -1,4 +1,6 @@
-package dnstap
+// Package taprw takes a query and intercepts the response.
+// It will log both after the response is written.
+package taprw
 
 import (
 	"github.com/coredns/coredns/middleware/dnstap/msg"
@@ -24,18 +26,19 @@ type ResponseWriter struct {
 
 // Check if a dnstap error occured.
 // Set during ResponseWriter.Write.
-func DnstapError(w ResponseWriter) error {
+func DnstapError(w *ResponseWriter) error {
 	return w.err
 }
 
-func (w ResponseWriter) QueryEpoch() {
+// To be called as soon as possible.
+func (w *ResponseWriter) QueryEpoch() {
 	msg.Epoch(&w.queryData)
 }
 
 // Write back the response to the client and THEN work on logging the request
 // and response to dnstap.
 // Dnstap errors to be checked by DnstapError.
-func (w ResponseWriter) WriteMsg(resp *dns.Msg) error {
+func (w *ResponseWriter) WriteMsg(resp *dns.Msg) error {
 	writeErr := w.ResponseWriter.WriteMsg(resp)
 
 	if err := tapQuery(w); err != nil {
@@ -51,7 +54,7 @@ func (w ResponseWriter) WriteMsg(resp *dns.Msg) error {
 
 	return writeErr
 }
-func tapQuery(w ResponseWriter) error {
+func tapQuery(w *ResponseWriter) error {
 	req := request.Request{W: w.ResponseWriter, Req: w.Query}
 	if err := msg.FromRequest(&w.queryData, req); err != nil {
 		return err
@@ -63,7 +66,7 @@ func tapQuery(w ResponseWriter) error {
 	}
 	return w.Taper.TapMessage(msg.ToClientQuery(&w.queryData))
 }
-func tapResponse(w ResponseWriter, resp *dns.Msg) error {
+func tapResponse(w *ResponseWriter, resp *dns.Msg) error {
 	d := &msg.Data{}
 	msg.Epoch(d)
 	req := request.Request{W: w, Req: resp}
