@@ -6,6 +6,7 @@ import (
 
 	"github.com/coredns/coredns/middleware"
 	"github.com/coredns/coredns/middleware/dnstap/msg"
+	"github.com/coredns/coredns/middleware/dnstap/taprw"
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
@@ -28,16 +29,16 @@ func (h Dnstap) TapMessage(m *tap.Message) error {
 }
 
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+	rw := &taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
+	rw.QueryEpoch()
 
-	taprw := ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
-	taprw.QueryEpoch()
-
-	code, err := middleware.NextOrFailure(h.Name(), h.Next, ctx, taprw, r)
+	code, err := middleware.NextOrFailure(h.Name(), h.Next, ctx, rw, r)
 	if err != nil {
+		// ignore dnstap errors
 		return code, err
 	}
 
-	if err := DnstapError(taprw); err != nil {
+	if err := taprw.DnstapError(rw); err != nil {
 		return code, err
 	}
 
