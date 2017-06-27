@@ -29,21 +29,19 @@ func FromRequest(d *Data, r request.Request) error {
 	case *net.TCPAddr:
 		d.Address = addr.IP
 		d.Port = uint32(addr.Port)
+		d.SocketProto = tap.SocketProtocol_TCP
 	case *net.UDPAddr:
 		d.Address = addr.IP
 		d.Port = uint32(addr.Port)
+		d.SocketProto = tap.SocketProtocol_UDP
 	default:
 		return errors.New("unknown remote address type")
 	}
 
-	d.SocketFam = tap.SocketFamily_INET
-	if r.Family() == 2 {
+	if a := net.IP(d.Address); a.To4() != nil {
+		d.SocketFam = tap.SocketFamily_INET
+	} else {
 		d.SocketFam = tap.SocketFamily_INET6
-	}
-
-	d.SocketProto = tap.SocketProtocol_UDP
-	if r.Proto() == "tcp" {
-		d.SocketProto = tap.SocketProtocol_TCP
 	}
 
 	return nil
