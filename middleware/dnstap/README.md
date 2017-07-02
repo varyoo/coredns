@@ -1,9 +1,9 @@
 # Directive
 
-`dnstap /tmp/dnstap.sock true`
+`dnstap SOCKET [full]`
 
-* Socket path
-* Report the wire-format DNS message.
+* **SOCKET** is the socket path supplied to the dnstap command line tool.
+* `full` to include the wire-format dns message.
 
 # dnstap command line tool
 

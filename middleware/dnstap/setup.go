@@ -1,13 +1,12 @@
 package dnstap
 
 import (
-	"strconv"
-
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
 	"github.com/coredns/coredns/middleware/dnstap/out"
 
 	"github.com/mholt/caddy"
+	"github.com/mholt/caddy/caddyfile"
 	"github.com/pkg/errors"
 )
 
@@ -25,21 +24,26 @@ func wrapSetup(c *caddy.Controller) error {
 	return nil
 }
 
-func setup(c *caddy.Controller) error {
-	c.Next() // 'dnstap'
-	if !c.NextArg() {
-		return c.ArgErr()
-	}
-	path := c.Val()
-	if !c.NextArg() {
-		return c.ArgErr()
-	}
-	pack, _ := strconv.ParseBool(c.Val())
-	if c.NextArg() {
-		return c.ArgErr()
+func parseConfig(c *caddyfile.Dispenser) (path string, full bool, err error) {
+	c.Next() // directive name
+
+	if !c.Args(&path) {
+		err = c.ArgErr()
+		return
 	}
 
-	dnstap := Dnstap{Pack: pack}
+	full = c.NextArg() && c.Val() == "full"
+
+	return
+}
+
+func setup(c *caddy.Controller) error {
+	path, full, err := parseConfig(&c.Dispenser)
+	if err != nil {
+		return err
+	}
+
+	dnstap := Dnstap{Pack: full}
 
 	o, err := out.NewSocket(path)
 	if err != nil {
