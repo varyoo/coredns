@@ -29,16 +29,16 @@ func (h Dnstap) TapMessage(m *tap.Message) error {
 }
 
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
-	rw := &taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
+	rw := taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
 	rw.QueryEpoch()
 
-	code, err := middleware.NextOrFailure(h.Name(), h.Next, ctx, rw, r)
+	code, err := middleware.NextOrFailure(h.Name(), h.Next, ctx, &rw, r)
 	if err != nil {
 		// ignore dnstap errors
 		return code, err
 	}
 
-	if err := taprw.DnstapError(rw); err != nil {
+	if err := rw.DnstapError(); err != nil {
 		return code, err
 	}
 
