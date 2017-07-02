@@ -24,7 +24,7 @@ func TestDnstapError(t *testing.T) {
 		Taper:          tapFailer{},
 	}
 	if err := rw.WriteMsg(new(dns.Msg)); err != nil {
-		t.Errorf("no dnstap error during Write: %s", err)
+		t.Errorf("dnstap error during Write: %s", err)
 	}
 	if rw.DnstapError() == nil {
 		t.Fatal("no dnstap error")
