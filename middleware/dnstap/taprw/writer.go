@@ -15,6 +15,7 @@ type Taper interface {
 	TapMessage(m *tap.Message) error
 }
 
+// Single request use.
 type ResponseWriter struct {
 	queryData msg.Data
 	Query     *dns.Msg
@@ -26,7 +27,7 @@ type ResponseWriter struct {
 
 // Check if a dnstap error occured.
 // Set during ResponseWriter.Write.
-func DnstapError(w *ResponseWriter) error {
+func (w ResponseWriter) DnstapError() error {
 	return w.err
 }
 
