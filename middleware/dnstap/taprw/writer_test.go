@@ -2,7 +2,6 @@ package taprw
 
 import (
 	"errors"
-	"net"
 	"testing"
 
 	"github.com/coredns/coredns/middleware/dnstap/msg"
@@ -39,16 +38,6 @@ func testingMsg() (m *dns.Msg) {
 	m.SetEdns0(4097, true)
 	return
 }
-func testingData() (d *msg.Data) {
-	d = &msg.Data{
-		Type:        tap.Message_CLIENT_RESPONSE,
-		SocketFam:   tap.SocketFamily_INET,
-		SocketProto: tap.SocketProtocol_UDP,
-		Address:     net.ParseIP("10.240.0.1"),
-		Port:        40212,
-	}
-	return
-}
 
 func TestClientResponse(t *testing.T) {
 	trapper := test.TrapTaper{}
@@ -57,7 +46,7 @@ func TestClientResponse(t *testing.T) {
 		Taper:          &trapper,
 		ResponseWriter: &test.ResponseWriter{},
 	}
-	d := testingData()
+	d := test.TestingData()
 	m := testingMsg()
 
 	// will the wire-format msg be reported?
@@ -96,7 +85,7 @@ func TestClientQuery(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	want := msg.ToClientQuery(testingData())
+	want := msg.ToClientQuery(test.TestingData())
 	if l := len(trapper.Trap); l != 1 {
 		t.Fatalf("%d msg trapped", l)
 		return

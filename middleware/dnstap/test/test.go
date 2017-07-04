@@ -1,8 +1,10 @@
 package test
 
 import (
+	"net"
 	"reflect"
 
+	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/middleware/test"
 
 	tap "github.com/dnstap/golang-dnstap"
@@ -10,6 +12,17 @@ import (
 
 type ResponseWriter struct {
 	test.ResponseWriter
+}
+
+func TestingData() (d *msg.Data) {
+	d = &msg.Data{
+		Type:        tap.Message_CLIENT_RESPONSE,
+		SocketFam:   tap.SocketFamily_INET,
+		SocketProto: tap.SocketProtocol_UDP,
+		Address:     net.ParseIP("10.240.0.1"),
+		Port:        40212,
+	}
+	return
 }
 
 type comp struct {
