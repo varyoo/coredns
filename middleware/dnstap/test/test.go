@@ -5,14 +5,9 @@ import (
 	"reflect"
 
 	"github.com/coredns/coredns/middleware/dnstap/msg"
-	"github.com/coredns/coredns/middleware/test"
 
 	tap "github.com/dnstap/golang-dnstap"
 )
-
-type ResponseWriter struct {
-	test.ResponseWriter
-}
 
 func TestingData() (d *msg.Data) {
 	d = &msg.Data{

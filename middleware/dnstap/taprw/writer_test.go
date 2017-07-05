@@ -6,6 +6,7 @@ import (
 
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/middleware/dnstap/test"
+	mwtest "github.com/coredns/coredns/middleware/test"
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
@@ -21,7 +22,7 @@ func (TapFailer) TapMessage(*tap.Message) error {
 func TestDnstapError(t *testing.T) {
 	rw := ResponseWriter{
 		Query:          new(dns.Msg),
-		ResponseWriter: &test.ResponseWriter{},
+		ResponseWriter: &mwtest.ResponseWriter{},
 		Taper:          TapFailer{},
 	}
 	if err := rw.WriteMsg(new(dns.Msg)); err != nil {
@@ -44,7 +45,7 @@ func TestClientResponse(t *testing.T) {
 	rw := ResponseWriter{
 		Pack:           true,
 		Taper:          &trapper,
-		ResponseWriter: &test.ResponseWriter{},
+		ResponseWriter: &mwtest.ResponseWriter{},
 	}
 	d := test.TestingData()
 	m := testingMsg()
@@ -78,7 +79,7 @@ func TestClientQuery(t *testing.T) {
 	rw := ResponseWriter{
 		Pack:           false, // no binary this time
 		Taper:          &trapper,
-		ResponseWriter: &test.ResponseWriter{},
+		ResponseWriter: &mwtest.ResponseWriter{},
 		Query:          testingMsg(),
 	}
 	if err := tapQuery(&rw); err != nil {
