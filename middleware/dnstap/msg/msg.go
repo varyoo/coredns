@@ -13,7 +13,7 @@ import (
 )
 
 // Data helps to build a dnstap Message.
-// It can be transformed into the actual Message using ToMsg.
+// It can be transformed into the actual Message using this package.
 type Data struct {
 	Type        tap.Message_Type
 	Packed      []byte
@@ -60,52 +60,7 @@ func Epoch(d *Data) {
 	d.TimeSec = uint64(time.Now().Unix())
 }
 
-// Transform the data into the actual message based on the type.
-func ToMsg(d *Data) *tap.Message {
-	m := tap.Message{
-		Type:           &d.Type,
-		SocketFamily:   &d.SocketFam,
-		SocketProtocol: &d.SocketProto,
-	}
-	switch *m.Type {
-	case tap.Message_CLIENT_QUERY,
-		tap.Message_RESOLVER_QUERY,
-		tap.Message_AUTH_QUERY,
-		tap.Message_FORWARDER_QUERY,
-		tap.Message_TOOL_QUERY:
-		// is query
-		m.QueryTimeSec = &d.TimeSec
-		m.QueryMessage = d.Packed
-	case tap.Message_CLIENT_RESPONSE,
-		tap.Message_RESOLVER_RESPONSE,
-		tap.Message_AUTH_RESPONSE,
-		tap.Message_FORWARDER_RESPONSE,
-		tap.Message_TOOL_RESPONSE:
-		// is response
-		m.ResponseTimeSec = &d.TimeSec
-		m.ResponseMessage = d.Packed
-	default:
-		panic("dnstap messsage type unknown")
-	}
-
-	// get the remote address and port depending on the event type
-	switch *m.Type {
-	case tap.Message_CLIENT_QUERY,
-		tap.Message_CLIENT_RESPONSE,
-		tap.Message_AUTH_QUERY,
-		tap.Message_AUTH_RESPONSE:
-		m.QueryAddress = d.Address
-		m.QueryPort = &d.Port
-	default:
-		m.ResponseAddress = d.Address
-		m.ResponsePort = &d.Port
-	}
-
-	return &m
-}
-
 // Transform the data into a client response message.
-// Alternative to ToMsg.
 func ToClientResponse(d *Data) *tap.Message {
 	d.Type = tap.Message_CLIENT_RESPONSE
 	return &tap.Message{
@@ -120,7 +75,6 @@ func ToClientResponse(d *Data) *tap.Message {
 }
 
 // Transform the data into a client query message.
-// Alternative to ToMsg.
 func ToClientQuery(d *Data) *tap.Message {
 	d.Type = tap.Message_CLIENT_QUERY
 	return &tap.Message{

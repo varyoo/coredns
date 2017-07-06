@@ -1,11 +1,13 @@
-# Directive
+# Dnstap
+
+## Syntax
 
 `dnstap SOCKET [full]`
 
 * **SOCKET** is the socket path supplied to the dnstap command line tool.
 * `full` to include the wire-format dns message.
 
-# dnstap command line tool
+## Dnstap command line tool
 
 ```sh
 go get github.com/dnstap/golang-dnstap
