@@ -71,7 +71,6 @@ func TestClientResponse(t *testing.T) {
 	if !test.MsgEqual(want, have) {
 		t.Fatalf("want: %v\nhave: %v", want, have)
 	}
-	return
 }
 
 func TestClientQuery(t *testing.T) {
@@ -95,5 +94,4 @@ func TestClientQuery(t *testing.T) {
 	if !test.MsgEqual(want, have) {
 		t.Fatalf("want: %v\nhave: %v", want, have)
 	}
-	return
 }
