@@ -43,7 +43,7 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	}
 
 	if err := rw.DnstapError(); err != nil {
-		return code, err
+		return code, errors.Wrap(err, "dnstap")
 	}
 
 	return code, nil

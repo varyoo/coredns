@@ -43,13 +43,13 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) error {
 	writeErr := w.ResponseWriter.WriteMsg(resp)
 
 	if err := tapQuery(w); err != nil {
-		w.err = errors.Wrap(err, "can't log client query")
+		w.err = errors.Wrap(err, "client query")
 		// don't forget to call DnstapError later
 	}
 
 	if writeErr == nil {
 		if err := tapResponse(w, resp); err != nil {
-			w.err = errors.Wrap(err, "can't log client response")
+			w.err = errors.Wrap(err, "client response")
 		}
 	}
 
