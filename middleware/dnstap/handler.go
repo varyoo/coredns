@@ -19,13 +19,17 @@ type Dnstap struct {
 	Pack bool
 }
 
-func (h Dnstap) TapMessage(m *tap.Message) error {
+func tapMessageTo(w io.Writer, m *tap.Message) error {
 	frame, err := msg.Marshal(m)
 	if err != nil {
 		return errors.Wrap(err, "marshal")
 	}
-	_, err = h.Out.Write(frame)
+	_, err = w.Write(frame)
 	return err
+}
+
+func (h Dnstap) TapMessage(m *tap.Message) error {
+	return tapMessageTo(h.Out, m)
 }
 
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
@@ -39,7 +43,7 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	}
 
 	if err := rw.DnstapError(); err != nil {
-		return code, err
+		return code, errors.Wrap(err, "dnstap")
 	}
 
 	return code, nil
