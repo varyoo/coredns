@@ -1,9 +1,10 @@
 package msg
 
 import (
+	"fmt"
+
 	lib "github.com/dnstap/golang-dnstap"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 )
 
 func wrap(m *lib.Message) *lib.Dnstap {
@@ -17,7 +18,7 @@ func wrap(m *lib.Message) *lib.Dnstap {
 func Marshal(m *lib.Message) (data []byte, err error) {
 	data, err = proto.Marshal(wrap(m))
 	if err != nil {
-		err = errors.Wrap(err, "proto")
+		err = fmt.Errorf("proto: %s", err)
 		return
 	}
 	return

@@ -2,6 +2,7 @@
 package msg
 
 import (
+	"errors"
 	"net"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 )
 
 // Data helps to build a dnstap Message.

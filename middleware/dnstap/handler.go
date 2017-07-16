@@ -1,6 +1,7 @@
 package dnstap
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 	"io"
 
@@ -10,7 +11,6 @@ import (
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 )
 
 type Dnstap struct {
@@ -22,7 +22,7 @@ type Dnstap struct {
 func tapMessageTo(w io.Writer, m *tap.Message) error {
 	frame, err := msg.Marshal(m)
 	if err != nil {
-		return errors.Wrap(err, "marshal")
+		return fmt.Errorf("marshal: %s", err)
 	}
 	_, err = w.Write(frame)
 	return err
@@ -43,7 +43,7 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	}
 
 	if err := rw.DnstapError(); err != nil {
-		return code, errors.Wrap(err, "dnstap")
+		return code, middleware.Error("dnstap", err)
 	}
 
 	return code, nil

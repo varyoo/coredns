@@ -1,10 +1,10 @@
 package out
 
 import (
+	"fmt"
 	"net"
 
 	fs "github.com/farsightsec/golang-framestream"
-	"github.com/pkg/errors"
 )
 
 type Socket struct {
@@ -43,7 +43,7 @@ func (s *Socket) Write(frame []byte) (int, error) {
 	if s.err != nil {
 		// is the dnstap tool listening?
 		if err := openSocket(s); err != nil {
-			return 0, errors.Wrap(err, "open socket")
+			return 0, fmt.Errorf("open socket: %s", err)
 		}
 	}
 	n, err := s.enc.Write(frame)
@@ -65,7 +65,7 @@ func (s *Socket) Close() error {
 	defer s.conn.Close()
 
 	if err := s.enc.Flush(); err != nil {
-		return errors.Wrap(err, "flush")
+		return fmt.Errorf("flush: %s", err)
 	}
 	if err := s.enc.Close(); err != nil {
 		return err

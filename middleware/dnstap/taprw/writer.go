@@ -3,12 +3,13 @@
 package taprw
 
 import (
+	"fmt"
+
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 )
 
 type Taper interface {
@@ -43,13 +44,13 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) error {
 	writeErr := w.ResponseWriter.WriteMsg(resp)
 
 	if err := tapQuery(w); err != nil {
-		w.err = errors.Wrap(err, "client query")
+		w.err = fmt.Errorf("client query: %s", err)
 		// don't forget to call DnstapError later
 	}
 
 	if writeErr == nil {
 		if err := tapResponse(w, resp); err != nil {
-			w.err = errors.Wrap(err, "client response")
+			w.err = fmt.Errorf("client response: %s", err)
 		}
 	}
 
@@ -62,7 +63,7 @@ func tapQuery(w *ResponseWriter) error {
 	}
 	if w.Pack {
 		if err := msg.Pack(&w.queryData, w.Query); err != nil {
-			return errors.Wrap(err, "pack")
+			return fmt.Errorf("pack: %s", err)
 		}
 	}
 	return w.Taper.TapMessage(msg.ToClientQuery(&w.queryData))
@@ -76,7 +77,7 @@ func tapResponse(w *ResponseWriter, resp *dns.Msg) error {
 	}
 	if w.Pack {
 		if err := msg.Pack(d, resp); err != nil {
-			return errors.Wrap(err, "pack")
+			return fmt.Errorf("pack: %s", err)
 		}
 	}
 	return w.Taper.TapMessage(msg.ToClientResponse(d))
