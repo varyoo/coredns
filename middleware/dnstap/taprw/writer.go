@@ -34,7 +34,7 @@ func (w ResponseWriter) DnstapError() error {
 
 // To be called as soon as possible.
 func (w *ResponseWriter) QueryEpoch() {
-	msg.Epoch(&w.queryData)
+	w.queryData.Epoch()
 }
 
 // Write back the response to the client and THEN work on logging the request
@@ -58,27 +58,27 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) error {
 }
 func tapQuery(w *ResponseWriter) error {
 	req := request.Request{W: w.ResponseWriter, Req: w.Query}
-	if err := msg.FromRequest(&w.queryData, req); err != nil {
+	if err := w.queryData.FromRequest(req); err != nil {
 		return err
 	}
 	if w.Pack {
-		if err := msg.Pack(&w.queryData, w.Query); err != nil {
+		if err := w.queryData.Pack(w.Query); err != nil {
 			return fmt.Errorf("pack: %s", err)
 		}
 	}
-	return w.Taper.TapMessage(msg.ToClientQuery(&w.queryData))
+	return w.Taper.TapMessage(w.queryData.ToClientQuery())
 }
 func tapResponse(w *ResponseWriter, resp *dns.Msg) error {
 	d := &msg.Data{}
-	msg.Epoch(d)
+	d.Epoch()
 	req := request.Request{W: w, Req: resp}
-	if err := msg.FromRequest(d, req); err != nil {
+	if err := d.FromRequest(req); err != nil {
 		return err
 	}
 	if w.Pack {
-		if err := msg.Pack(d, resp); err != nil {
+		if err := d.Pack(resp); err != nil {
 			return fmt.Errorf("pack: %s", err)
 		}
 	}
-	return w.Taper.TapMessage(msg.ToClientResponse(d))
+	return w.Taper.TapMessage(d.ToClientResponse())
 }

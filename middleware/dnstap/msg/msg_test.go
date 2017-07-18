@@ -14,7 +14,7 @@ import (
 
 func testRequest(t *testing.T, expected Data, r request.Request) {
 	d := Data{}
-	if err := FromRequest(&d, r); err != nil {
+	if err := d.FromRequest(r); err != nil {
 		t.Fail()
 		return
 	}

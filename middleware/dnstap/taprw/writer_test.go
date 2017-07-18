@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/middleware/dnstap/test"
 	mwtest "github.com/coredns/coredns/middleware/test"
 
@@ -62,7 +61,7 @@ func TestClientResponse(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	want := msg.ToClientResponse(d)
+	want := d.ToClientResponse()
 	if l := len(trapper.Trap); l != 1 {
 		t.Fatalf("%d msg trapped", l)
 		return
@@ -85,7 +84,7 @@ func TestClientQuery(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	want := msg.ToClientQuery(test.TestingData())
+	want := test.TestingData().ToClientQuery()
 	if l := len(trapper.Trap); l != 1 {
 		t.Fatalf("%d msg trapped", l)
 		return

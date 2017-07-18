@@ -24,7 +24,7 @@ type Data struct {
 	TimeSec     uint64
 }
 
-func FromRequest(d *Data, r request.Request) error {
+func (d *Data) FromRequest(r request.Request) error {
 	switch addr := r.W.RemoteAddr().(type) {
 	case *net.TCPAddr:
 		d.Address = addr.IP
@@ -47,7 +47,7 @@ func FromRequest(d *Data, r request.Request) error {
 	return nil
 }
 
-func Pack(d *Data, m *dns.Msg) error {
+func (d *Data) Pack(m *dns.Msg) error {
 	packed, err := m.Pack()
 	if err != nil {
 		return err
@@ -56,12 +56,12 @@ func Pack(d *Data, m *dns.Msg) error {
 	return nil
 }
 
-func Epoch(d *Data) {
+func (d *Data) Epoch() {
 	d.TimeSec = uint64(time.Now().Unix())
 }
 
 // Transform the data into a client response message.
-func ToClientResponse(d *Data) *tap.Message {
+func (d *Data) ToClientResponse() *tap.Message {
 	d.Type = tap.Message_CLIENT_RESPONSE
 	return &tap.Message{
 		Type:            &d.Type,
@@ -75,7 +75,7 @@ func ToClientResponse(d *Data) *tap.Message {
 }
 
 // Transform the data into a client query message.
-func ToClientQuery(d *Data) *tap.Message {
+func (d *Data) ToClientQuery() *tap.Message {
 	d.Type = tap.Message_CLIENT_QUERY
 	return &tap.Message{
 		Type:           &d.Type,

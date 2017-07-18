@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/middleware/dnstap/test"
 	mwtest "github.com/coredns/coredns/middleware/test"
 
@@ -60,7 +59,7 @@ func TestDnstap(t *testing.T) {
 			mwtest.A("example.org. 3600	IN	A 10.0.0.1"),
 		},
 	}.Msg()
-	tapq := msg.ToClientQuery(test.TestingData())
-	tapr := msg.ToClientResponse(test.TestingData())
+	tapq := test.TestingData().ToClientQuery()
+	tapr := test.TestingData().ToClientResponse()
 	testCase(t, tapq, tapr, q, r)
 }
