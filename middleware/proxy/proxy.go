@@ -3,13 +3,17 @@ package proxy
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/coredns/coredns/middleware"
+	"github.com/coredns/coredns/middleware/dnstap"
+	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
+	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
 	ot "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
@@ -20,6 +24,10 @@ var (
 	errInvalidProtocol = errors.New("invalid protocol")
 	errInvalidDomain   = errors.New("invalid path for proxy")
 )
+
+type Taper interface {
+	Tap(d *msg.Data, m *dns.Msg, isQuery bool) error
+}
 
 // Proxy represents a middleware instance that can proxy requests to another (DNS) server.
 type Proxy struct {
@@ -33,6 +41,10 @@ type Proxy struct {
 	// Trace is the Trace middleware, if it is installed
 	// This is used by the grpc exchanger to trace through the grpc calls
 	Trace middleware.Handler
+
+	// Dnstap is the Dnstap middleware, if it is installed
+	// This is used to log the messages forwarded by Lookup.
+	Dnstap dnstap.Dnstap
 }
 
 // Upstream manages a pool of proxy upstream hosts. Select should return a
@@ -177,6 +189,29 @@ func (p Proxy) match(state request.Request) (u Upstream) {
 	}
 	return u
 
+}
+
+func (p Proxy) Tap(d *msg.Data, m *dns.Msg, isQuery bool) error {
+	if p.Dnstap.Out == nil {
+		// nothing to log to
+		return nil
+	}
+
+	if p.Dnstap.Pack {
+		if err := d.Pack(m); err != nil {
+			return fmt.Errorf("pack: %s", err)
+		}
+	}
+
+	var msg *tap.Message
+	if isQuery {
+		d.Type = tap.Message_FORWARDER_QUERY
+		msg = d.ToOutsideQuery()
+	} else {
+		d.Type = tap.Message_FORWARDER_RESPONSE
+		msg = d.ToOutsideResponse()
+	}
+	return p.Dnstap.TapMessage(msg)
 }
 
 // Name implements the Handler interface.

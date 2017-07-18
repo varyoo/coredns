@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
 	"github.com/miekg/dns"
@@ -13,6 +14,7 @@ import (
 type dnsEx struct {
 	Timeout time.Duration
 	Options
+	Taper
 }
 
 // Options define the options understood by dns.Exchange.
@@ -43,6 +45,15 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		return nil, err
 	}
 
+	// log forwarded query to dnstap
+	if d.Taper != nil {
+		// don't know yet how to report dnstap errors
+		dat := msg.Data{}
+		dat.FromConn(co)
+		dat.Epoch()
+		d.Taper.Tap(&dat, state.Req, true)
+	}
+
 	reply, _, err := d.ExchangeConn(state.Req, co)
 
 	co.Close()
@@ -59,6 +70,15 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply, _ = state.Scrub(reply)
 	reply.Compress = true
 	reply.Id = state.Req.Id
+
+	// log response to dnstap
+	if d.Taper != nil {
+		// don't know yet how to report dnstap errors
+		dat := msg.Data{}
+		dat.Epoch()
+		dat.FromConn(co)
+		d.Taper.Tap(&dat, reply, false)
+	}
 
 	return reply, nil
 }
