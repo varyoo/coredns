@@ -1,8 +1,11 @@
 package proxy
 
 import (
+	"log"
+
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
+	"github.com/coredns/coredns/middleware/dnstap"
 
 	"github.com/mholt/caddy"
 )
@@ -15,13 +18,23 @@ func init() {
 }
 
 func setup(c *caddy.Controller) error {
-	upstreams, err := NewStaticUpstreams(&c.Dispenser)
+	t := dnsserver.GetConfig(c).GetHandler("trace")
+	P := &Proxy{Trace: t}
+
+	upstreams, err := NewStaticUpstreamsTap(&c.Dispenser, P)
 	if err != nil {
 		return middleware.Error("proxy", err)
 	}
 
-	t := dnsserver.GetConfig(c).Handler("trace")
-	P := &Proxy{Trace: t}
+	if h := dnsserver.GetMiddleware(c, "dnstap"); h != nil {
+		if d, ok := h.(dnstap.Dnstap); ok {
+			P.Dnstap = d
+		} else {
+			// should it be fatal instead?
+			log.Printf("[WARNING] Wrong type for dnstap middleware reference: %s", h)
+		}
+	}
+
 	dnsserver.GetConfig(c).AddMiddleware(func(next middleware.Handler) middleware.Handler {
 		P.Next = next
 		P.Upstreams = &upstreams
