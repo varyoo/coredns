@@ -29,8 +29,16 @@ type staticUpstream struct {
 // NewStaticUpstreams parses the configuration input and sets up
 // static upstreams for the proxy middleware.
 func NewStaticUpstreams(c *caddyfile.Dispenser) ([]Upstream, error) {
+	return NewStaticUpstreamsTap(c, nil)
+}
+
+func NewStaticUpstreamsTap(c *caddyfile.Dispenser, taper Taper) ([]Upstream, error) {
 	var upstreams []Upstream
 	for c.Next() {
+		ex := newDNSEx()
+		if taper != nil {
+			ex.Taper = taper
+		}
 		upstream := &staticUpstream{
 			from: ".",
 			HealthCheck: healthcheck.HealthCheck{
@@ -38,7 +46,7 @@ func NewStaticUpstreams(c *caddyfile.Dispenser) ([]Upstream, error) {
 				MaxFails:    1,
 				Future:      60 * time.Second,
 			},
-			ex: newDNSEx(),
+			ex: ex,
 		}
 
 		if !c.Args(&upstream.from) {

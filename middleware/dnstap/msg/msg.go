@@ -24,8 +24,12 @@ type Data struct {
 	TimeSec     uint64
 }
 
-func (d *Data) FromRequest(r request.Request) error {
-	switch addr := r.W.RemoteAddr().(type) {
+type Conn interface {
+	RemoteAddr() net.Addr
+}
+
+func (d *Data) FromConn(c Conn) error {
+	switch addr := c.RemoteAddr().(type) {
 	case *net.TCPAddr:
 		d.Address = addr.IP
 		d.Port = uint32(addr.Port)
@@ -45,6 +49,10 @@ func (d *Data) FromRequest(r request.Request) error {
 	}
 
 	return nil
+}
+
+func (d *Data) FromRequest(r request.Request) error {
+	return d.FromConn(r.W)
 }
 
 func (d *Data) Pack(m *dns.Msg) error {
@@ -85,5 +93,31 @@ func (d *Data) ToClientQuery() *tap.Message {
 		QueryMessage:   d.Packed,
 		QueryAddress:   d.Address,
 		QueryPort:      &d.Port,
+	}
+}
+
+// Transform the data into a forwader or resolver query message.
+func (d *Data) ToOutsideQuery() *tap.Message {
+	return &tap.Message{
+		Type:            &d.Type,
+		SocketFamily:    &d.SocketFam,
+		SocketProtocol:  &d.SocketProto,
+		QueryTimeSec:    &d.TimeSec,
+		QueryMessage:    d.Packed,
+		ResponseAddress: d.Address,
+		ResponsePort:    &d.Port,
+	}
+}
+
+// Transform the data into a forwader or resolver response message.
+func (d *Data) ToOutsideResponse() *tap.Message {
+	return &tap.Message{
+		Type:            &d.Type,
+		SocketFamily:    &d.SocketFam,
+		SocketProtocol:  &d.SocketProto,
+		ResponseTimeSec: &d.TimeSec,
+		ResponseMessage: d.Packed,
+		ResponseAddress: d.Address,
+		ResponsePort:    &d.Port,
 	}
 }
