@@ -145,12 +145,12 @@ func (p Proxy) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (
 				child.Finish()
 			}
 
-			if backendErr == nil {
+			if reply != nil {
 				w.WriteMsg(reply)
 
 				RequestDuration.WithLabelValues(state.Proto(), upstream.Exchanger().Protocol(), upstream.From()).Observe(float64(time.Since(start) / time.Millisecond))
 
-				return 0, nil
+				return 0, backendErr
 			}
 			timeout := host.FailTimeout
 			if timeout == 0 {
