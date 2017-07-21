@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -34,7 +35,22 @@ func (d *dnsEx) Protocol() string          { return "dns" }
 func (d *dnsEx) OnShutdown(p *Proxy) error { return nil }
 func (d *dnsEx) OnStartup(p *Proxy) error  { return nil }
 
+func (d *dnsEx) tap(co net.Conn, m *dns.Msg, isQuery bool) error {
+	if d.Taper == nil {
+		// nothing to tap to
+		return nil
+	}
+	dat := msg.Data{}
+	dat.Epoch()
+	if err := dat.FromConn(co); err != nil {
+		return err
+	}
+	return d.Taper.Tap(&dat, m, isQuery)
+}
+
 // Exchange implements the Exchanger interface.
+// When *dns.Msg is not nil it is valid.
+// When both *dns.Msg and error are not nil, the error should be reported.
 func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request) (*dns.Msg, error) {
 	proto := state.Proto()
 	if d.Options.ForceTCP {
@@ -46,12 +62,9 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	}
 
 	// log forwarded query to dnstap
-	if d.Taper != nil {
-		// don't know yet how to report dnstap errors
-		dat := msg.Data{}
-		dat.FromConn(co)
-		dat.Epoch()
-		d.Taper.Tap(&dat, state.Req, true)
+	taperr := d.tap(co, state.Req, true)
+	if taperr != nil {
+		taperr = fmt.Errorf("dnstap: %s", err)
 	}
 
 	reply, _, err := d.ExchangeConn(state.Req, co)
@@ -72,15 +85,11 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply.Id = state.Req.Id
 
 	// log response to dnstap
-	if d.Taper != nil {
-		// don't know yet how to report dnstap errors
-		dat := msg.Data{}
-		dat.Epoch()
-		dat.FromConn(co)
-		d.Taper.Tap(&dat, reply, false)
+	if err := d.tap(co, reply, false); err != nil {
+		return reply, fmt.Errorf("dnstap: %s", err)
 	}
 
-	return reply, nil
+	return reply, taperr
 }
 
 func (d *dnsEx) ExchangeConn(m *dns.Msg, co net.Conn) (*dns.Msg, time.Duration, error) {
