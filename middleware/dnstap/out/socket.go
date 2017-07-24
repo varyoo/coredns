@@ -7,6 +7,7 @@ import (
 	fs "github.com/farsightsec/golang-framestream"
 )
 
+// Socket is a Frame Streams encoder over a UNIX socket.
 type Socket struct {
 	path string
 	enc  *fs.Encoder
@@ -25,20 +26,28 @@ func openSocket(s *Socket) error {
 		ContentType:   []byte("protobuf:dnstap.Dnstap"),
 		Bidirectional: true,
 	})
+	if err != nil {
+		return err
+	}
 	s.enc = enc
 
 	s.err = nil
 	return nil
 }
 
-func NewSocket(path string) (*Socket, error) {
-	s := Socket{path: path}
-	if err := openSocket(&s); err != nil {
-		return nil, err
+// NewSocket will always return a new Socket.
+// err if nothing is listening to it, it will attempt to reconnect on the next Write.
+func NewSocket(path string) (s *Socket, err error) {
+	s = &Socket{path: path}
+	if err = openSocket(s); err != nil {
+		err = fmt.Errorf("open socket: %s", err)
+		s.err = err
+		return
 	}
-	return &s, nil
+	return
 }
 
+// Write a single Frame Streams frame.
 func (s *Socket) Write(frame []byte) (int, error) {
 	if s.err != nil {
 		// is the dnstap tool listening?
@@ -56,6 +65,8 @@ func (s *Socket) Write(frame []byte) (int, error) {
 	return n, nil
 
 }
+
+// Close the socket and flush the remaining frames.
 func (s *Socket) Close() error {
 	if s.err != nil {
 		// nothing to close

@@ -44,6 +44,17 @@ func sendOne(socket *Socket) error {
 	return nil
 }
 func TestSocket(t *testing.T) {
+	socket, err := NewSocket("dnstap.sock")
+	if err == nil {
+		t.Fatal("new socket: not listening but no error")
+		return
+	}
+
+	if err := sendOne(socket); err == nil {
+		t.Fatal("not listening but no error")
+		return
+	}
+
 	l, err := net.Listen("unix", "dnstap.sock")
 	if err != nil {
 		t.Fatal(err)
@@ -55,12 +66,6 @@ func TestSocket(t *testing.T) {
 		acceptOne(t, l)
 		wait <- true
 	}()
-
-	socket, err := NewSocket("dnstap.sock")
-	if err != nil {
-		t.Fatalf("new socket: %s", err)
-		return
-	}
 
 	if err := sendOne(socket); err != nil {
 		t.Fatalf("send one: %s", err)

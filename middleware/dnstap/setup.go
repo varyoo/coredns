@@ -2,6 +2,7 @@ package dnstap
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
@@ -48,7 +49,7 @@ func setup(c *caddy.Controller) error {
 
 	o, err := out.NewSocket(path)
 	if err != nil {
-		return fmt.Errorf("output: %s", err)
+		log.Printf("[WARN] Can't connect to %s at the moment", path)
 	}
 	dnstap.Out = o
 
