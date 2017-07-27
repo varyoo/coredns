@@ -9,18 +9,19 @@ import (
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
+	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
 )
 
 type dnsEx struct {
 	Timeout time.Duration
 	Options
-	Taper
 }
 
 // Options define the options understood by dns.Exchange.
 type Options struct {
 	ForceTCP bool // If true use TCP for upstream no matter what
+	Dnstap
 }
 
 func newDNSEx() *dnsEx {
@@ -35,19 +36,6 @@ func (d *dnsEx) Protocol() string          { return "dns" }
 func (d *dnsEx) OnShutdown(p *Proxy) error { return nil }
 func (d *dnsEx) OnStartup(p *Proxy) error  { return nil }
 
-func (d *dnsEx) tap(co net.Conn, m *dns.Msg, isQuery bool) error {
-	if d.Taper == nil {
-		// nothing to tap to
-		return nil
-	}
-	dat := msg.Data{}
-	dat.Epoch()
-	if err := dat.FromConn(co); err != nil {
-		return err
-	}
-	return d.Taper.Tap(&dat, m, isQuery)
-}
-
 // Exchange implements the Exchanger interface.
 // When *dns.Msg is not nil it is valid.
 // When both *dns.Msg and error are not nil, the error should be reported.
@@ -61,10 +49,20 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		return nil, err
 	}
 
-	// log forwarded query to dnstap
-	taperr := d.tap(co, state.Req, true)
-	if taperr != nil {
-		taperr = fmt.Errorf("dnstap: %s", err)
+	// log the forwarded query to dnstap
+	dnstap := msg.Data{}
+	var taperr error
+	if d.Options.Dnstap != nil {
+		dnstap.FromConn(co)
+		dnstap.Type = tap.Message_FORWARDER_QUERY
+		if d.Options.IncludeBinary() {
+			dnstap.Pack(state.Req)
+		}
+		dnstap.Epoch()
+		taperr = d.Options.TapMessage(dnstap.ToOutsideQuery())
+		if taperr != nil {
+			taperr = fmt.Errorf("dnstap: %s", err)
+		}
 	}
 
 	reply, _, err := d.ExchangeConn(state.Req, co)
@@ -85,8 +83,15 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply.Id = state.Req.Id
 
 	// log response to dnstap
-	if err := d.tap(co, reply, false); err != nil {
-		return reply, fmt.Errorf("dnstap: %s", err)
+	if d.Options.Dnstap != nil {
+		dnstap.Type = tap.Message_FORWARDER_RESPONSE
+		dnstap.Epoch()
+		if d.Options.IncludeBinary() {
+			dnstap.Pack(reply)
+		}
+		if err := d.Options.TapMessage(dnstap.ToOutsideResponse()); err != nil {
+			return reply, fmt.Errorf("dnstap: %s", err)
+		}
 	}
 
 	return reply, taperr

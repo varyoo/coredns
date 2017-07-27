@@ -5,10 +5,15 @@ import (
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
-	"github.com/coredns/coredns/middleware/dnstap"
 
+	tap "github.com/dnstap/golang-dnstap"
 	"github.com/mholt/caddy"
 )
+
+type Dnstap interface {
+	TapMessage(*tap.Message) error
+	IncludeBinary() bool
+}
 
 func init() {
 	caddy.RegisterPlugin("proxy", caddy.Plugin{
@@ -21,18 +26,18 @@ func setup(c *caddy.Controller) error {
 	t := dnsserver.GetMiddleware(c, "trace")
 	P := &Proxy{Trace: t}
 
-	upstreams, err := NewStaticUpstreamsTap(&c.Dispenser, P)
-	if err != nil {
-		return middleware.Error("proxy", err)
-	}
-
 	if h := dnsserver.GetMiddleware(c, "dnstap"); h != nil {
-		if d, ok := h.(dnstap.Dnstap); ok {
+		if d, ok := h.(Dnstap); ok {
 			P.Dnstap = d
 		} else {
 			// should it be fatal instead?
 			log.Printf("[WARNING] Wrong type for dnstap middleware reference: %s", h)
 		}
+	}
+
+	upstreams, err := NewStaticUpstreamsTap(&c.Dispenser, P.Dnstap)
+	if err != nil {
+		return middleware.Error("proxy", err)
 	}
 
 	dnsserver.GetConfig(c).AddMiddleware(func(next middleware.Handler) middleware.Handler {
