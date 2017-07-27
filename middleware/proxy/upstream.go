@@ -31,13 +31,9 @@ func NewStaticUpstreams(c *caddyfile.Dispenser) ([]Upstream, error) {
 	return NewStaticUpstreamsTap(c, nil)
 }
 
-func NewStaticUpstreamsTap(c *caddyfile.Dispenser, taper Taper) ([]Upstream, error) {
+func NewStaticUpstreamsTap(c *caddyfile.Dispenser, dnstap Dnstap) ([]Upstream, error) {
 	var upstreams []Upstream
 	for c.Next() {
-		ex := newDNSEx()
-		if taper != nil {
-			ex.Taper = taper
-		}
 		upstream := &staticUpstream{
 			from: ".",
 			HealthCheck: healthcheck.HealthCheck{
@@ -45,7 +41,7 @@ func NewStaticUpstreamsTap(c *caddyfile.Dispenser, taper Taper) ([]Upstream, err
 				MaxFails:    1,
 				Future:      60 * time.Second,
 			},
-			ex: ex,
+			ex: newDNSExWithOption(Options{Dnstap: dnstap}),
 		}
 
 		if !c.Args(&upstream.from) {
@@ -65,7 +61,7 @@ func NewStaticUpstreamsTap(c *caddyfile.Dispenser, taper Taper) ([]Upstream, err
 		}
 
 		for c.NextBlock() {
-			if err := parseBlock(c, upstream); err != nil {
+			if err := parseBlock(c, upstream, dnstap); err != nil {
 				return upstreams, err
 			}
 		}
@@ -114,7 +110,7 @@ func (u *staticUpstream) From() string {
 	return u.from
 }
 
-func parseBlock(c *caddyfile.Dispenser, u *staticUpstream) error {
+func parseBlock(c *caddyfile.Dispenser, u *staticUpstream, dnstap Dnstap) error {
 	switch c.Val() {
 	case "policy":
 		if !c.NextArg() {
@@ -189,16 +185,15 @@ func parseBlock(c *caddyfile.Dispenser, u *staticUpstream) error {
 		}
 		switch encArgs[0] {
 		case "dns":
+			opts := Options{Dnstap: dnstap}
 			if len(encArgs) > 1 {
 				if encArgs[1] == "force_tcp" {
-					opts := Options{ForceTCP: true}
-					u.ex = newDNSExWithOption(opts)
+					opts.ForceTCP = true
 				} else {
 					return fmt.Errorf("only force_tcp allowed as parameter to dns")
 				}
-			} else {
-				u.ex = newDNSEx()
 			}
+			u.ex = newDNSExWithOption(opts)
 		case "https_google":
 			boot := []string{"8.8.8.8:53", "8.8.4.4:53"}
 			if len(encArgs) > 2 && encArgs[1] == "bootstrap" {

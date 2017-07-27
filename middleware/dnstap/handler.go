@@ -33,6 +33,10 @@ func (h Dnstap) TapMessage(m *tap.Message) error {
 	return tapMessageTo(h.Out, m)
 }
 
+func (h Dnstap) IncludeBinary() bool {
+	return h.Pack
+}
+
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	rw := &taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
 	rw.QueryEpoch()
