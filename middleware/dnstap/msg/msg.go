@@ -51,6 +51,43 @@ func (d *Data) FromConn(c Conn) error {
 	return nil
 }
 
+type (
+	Type    func(*Data) *tap.Message
+	Packer  func() ([]byte, error)
+	Builder struct {
+		Type
+		Pack Packer
+		Data
+	}
+)
+
+func (b *Builder) IncludeBinary() error {
+	bin, err := b.Pack()
+	if err != nil {
+		return err
+	}
+	b.Data.Packed = bin
+	return nil
+}
+
+func OutsideQuery(t tap.Message_Type) Type {
+	return func(d *Data) *tap.Message {
+		d.Type = t
+		return d.ToOutsideQuery()
+	}
+}
+func OutsideResponse(t tap.Message_Type) Type {
+	return func(d *Data) *tap.Message {
+		d.Type = t
+		return d.ToOutsideResponse()
+	}
+}
+
+func (b Builder) Build() (*tap.Message, error) {
+	b.Epoch()
+	return b.Type(&b.Data), nil
+}
+
 func (d *Data) FromRequest(r request.Request) error {
 	return d.FromConn(r.W)
 }

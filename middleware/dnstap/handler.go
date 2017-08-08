@@ -33,8 +33,18 @@ func (h Dnstap) TapMessage(m *tap.Message) error {
 	return tapMessageTo(h.Out, m)
 }
 
-func (h Dnstap) IncludeBinary() bool {
-	return h.Pack
+func (h Dnstap) Tap(b *msg.Builder) error {
+	if h.Pack {
+		if err := b.IncludeBinary(); err != nil {
+			return fmt.Errorf("pack: %s", err)
+		}
+	}
+
+	m, err := b.Build()
+	if err != nil {
+		return err
+	}
+	return tapMessageTo(h.Out, m)
 }
 
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {

@@ -5,14 +5,13 @@ import (
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
+	"github.com/coredns/coredns/middleware/dnstap/msg"
 
-	tap "github.com/dnstap/golang-dnstap"
 	"github.com/mholt/caddy"
 )
 
 type Dnstap interface {
-	TapMessage(*tap.Message) error
-	IncludeBinary() bool
+	Tap(*msg.Builder) error
 }
 
 func init() {
