@@ -50,16 +50,13 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	}
 
 	// log the forwarded query to dnstap
-	dnstap := msg.Data{}
 	var taperr error
+	b := msg.Builder{}
 	if d.Options.Dnstap != nil {
-		dnstap.FromConn(co)
-		dnstap.Type = tap.Message_FORWARDER_QUERY
-		if d.Options.IncludeBinary() {
-			dnstap.Pack(state.Req)
-		}
-		dnstap.Epoch()
-		taperr = d.Options.TapMessage(dnstap.ToOutsideQuery())
+		b.FromConn(co)
+		b.Type = msg.OutsideQuery(tap.Message_FORWARDER_QUERY)
+		b.Pack = state.Req.Pack
+		taperr = d.Options.Tap(&b)
 		if taperr != nil {
 			taperr = fmt.Errorf("dnstap: %s", err)
 		}
@@ -84,12 +81,9 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 
 	// log response to dnstap
 	if d.Options.Dnstap != nil {
-		dnstap.Type = tap.Message_FORWARDER_RESPONSE
-		dnstap.Epoch()
-		if d.Options.IncludeBinary() {
-			dnstap.Pack(reply)
-		}
-		if err := d.Options.TapMessage(dnstap.ToOutsideResponse()); err != nil {
+		b.Type = msg.OutsideResponse(tap.Message_FORWARDER_RESPONSE)
+		b.Pack = reply.Pack
+		if err := d.Options.Tap(&b); err != nil {
 			return reply, fmt.Errorf("dnstap: %s", err)
 		}
 	}
