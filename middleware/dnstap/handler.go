@@ -34,13 +34,7 @@ func (h Dnstap) TapMessage(m *tap.Message) error {
 }
 
 func (h Dnstap) Tap(b *msg.Builder) error {
-	if h.Pack {
-		if err := b.IncludeBinary(); err != nil {
-			return fmt.Errorf("pack: %s", err)
-		}
-	}
-
-	m, err := b.Build()
+	m, err := b.Build(h.Pack)
 	if err != nil {
 		return err
 	}
