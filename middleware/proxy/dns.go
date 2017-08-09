@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/coredns/coredns/middleware/dnstap"
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
@@ -21,7 +22,6 @@ type dnsEx struct {
 // Options define the options understood by dns.Exchange.
 type Options struct {
 	ForceTCP bool // If true use TCP for upstream no matter what
-	Dnstap
 }
 
 func newDNSEx() *dnsEx {
@@ -49,14 +49,15 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		return nil, err
 	}
 
+	taper := dnstap.TaperFromContext(ctx)
 	// log the forwarded query to dnstap
 	var taperr error
 	b := msg.Builder{}
-	if d.Options.Dnstap != nil {
+	if taper != nil {
 		b.FromConn(co)
 		b.Type = msg.OutsideQuery(tap.Message_FORWARDER_QUERY)
 		b.Pack = state.Req.Pack
-		taperr = d.Options.Tap(&b)
+		taperr = taper.Tap(&b)
 		if taperr != nil {
 			taperr = fmt.Errorf("dnstap: %s", err)
 		}
@@ -80,10 +81,10 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply.Id = state.Req.Id
 
 	// log response to dnstap
-	if d.Options.Dnstap != nil {
+	if taper != nil {
 		b.Type = msg.OutsideResponse(tap.Message_FORWARDER_RESPONSE)
 		b.Pack = reply.Pack
-		if err := d.Options.Tap(&b); err != nil {
+		if err := taper.Tap(&b); err != nil {
 			return reply, fmt.Errorf("dnstap: %s", err)
 		}
 	}

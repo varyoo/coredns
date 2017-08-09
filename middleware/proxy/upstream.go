@@ -29,10 +29,6 @@ type staticUpstream struct {
 // NewStaticUpstreams parses the configuration input and sets up
 // static upstreams for the proxy middleware.
 func NewStaticUpstreams(c *caddyfile.Dispenser) ([]Upstream, error) {
-	return NewStaticUpstreamsTap(c, nil)
-}
-
-func NewStaticUpstreamsTap(c *caddyfile.Dispenser, dnstap Dnstap) ([]Upstream, error) {
 	var upstreams []Upstream
 	for c.Next() {
 		upstream := &staticUpstream{
@@ -42,7 +38,7 @@ func NewStaticUpstreamsTap(c *caddyfile.Dispenser, dnstap Dnstap) ([]Upstream, e
 				MaxFails:    1,
 				Future:      60 * time.Second,
 			},
-			ex: newDNSExWithOption(Options{Dnstap: dnstap}),
+			ex: newDNSEx(),
 		}
 
 		if !c.Args(&upstream.from) {
@@ -60,7 +56,7 @@ func NewStaticUpstreamsTap(c *caddyfile.Dispenser, dnstap Dnstap) ([]Upstream, e
 		}
 
 		for c.NextBlock() {
-			if err := parseBlock(c, upstream, dnstap); err != nil {
+			if err := parseBlock(c, upstream); err != nil {
 				return upstreams, err
 			}
 		}
@@ -109,7 +105,7 @@ func (u *staticUpstream) From() string {
 	return u.from
 }
 
-func parseBlock(c *caddyfile.Dispenser, u *staticUpstream, dnstap Dnstap) error {
+func parseBlock(c *caddyfile.Dispenser, u *staticUpstream) error {
 	switch c.Val() {
 	case "policy":
 		if !c.NextArg() {
@@ -184,7 +180,7 @@ func parseBlock(c *caddyfile.Dispenser, u *staticUpstream, dnstap Dnstap) error 
 		}
 		switch encArgs[0] {
 		case "dns":
-			opts := Options{Dnstap: dnstap}
+			opts := Options{}
 			if len(encArgs) > 1 {
 				if encArgs[1] == "force_tcp" {
 					opts.ForceTCP = true
