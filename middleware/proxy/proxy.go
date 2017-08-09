@@ -33,10 +33,6 @@ type Proxy struct {
 	// Trace is the Trace middleware, if it is installed
 	// This is used by the grpc exchanger to trace through the grpc calls
 	Trace middleware.Handler
-
-	// Dnstap is the Dnstap middleware, if it is installed
-	// This is used to log the messages forwarded by Lookup.
-	Dnstap Dnstap
 }
 
 // Upstream manages a pool of proxy upstream hosts. Select should return a

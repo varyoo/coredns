@@ -4,20 +4,36 @@ import (
 	"fmt"
 	"io"
 
-	"golang.org/x/net/context"
-
 	"github.com/coredns/coredns/middleware"
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/middleware/dnstap/taprw"
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
+	"golang.org/x/net/context"
 )
 
 type Dnstap struct {
 	Next middleware.Handler
 	Out  io.Writer
 	Pack bool
+}
+
+type (
+	// Taper is implemented by the Context passed by the dnstap handler.
+	Taper interface {
+		Tap(*msg.Builder) error
+	}
+	tapContext struct {
+		context.Context
+		Dnstap
+	}
+)
+
+// TaperFromContext will return a Taper if the dnstap middleware is enabled.
+func TaperFromContext(ctx context.Context) (t Taper) {
+	t, _ = ctx.(Taper)
+	return
 }
 
 func tapMessageTo(w io.Writer, m *tap.Message) error {
@@ -45,7 +61,7 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	rw := &taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
 	rw.QueryEpoch()
 
-	code, err := middleware.NextOrFailure(h.Name(), h.Next, ctx, rw, r)
+	code, err := middleware.NextOrFailure(h.Name(), h.Next, tapContext{ctx, h}, rw, r)
 	if err != nil {
 		// ignore dnstap errors
 		return code, err
