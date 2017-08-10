@@ -49,14 +49,17 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		return nil, err
 	}
 
+	// Setup dnstap from context.
 	taper := dnstap.TaperFromContext(ctx)
-	// log the forwarded query to dnstap
 	var taperr error
-	b := msg.Builder{}
+	b := msg.Builder{} // will be reused for the response
+
 	if taper != nil {
-		b.FromConn(co)
+		b.FromConn(co) // same connection for the response
 		b.Type = msg.OutsideQuery(tap.Message_FORWARDER_QUERY)
 		b.Pack = state.Req.Pack
+
+		// Log the forwarded query to dnstap.
 		taperr = taper.Tap(&b)
 		if taperr != nil {
 			taperr = fmt.Errorf("dnstap: %s", err)
@@ -80,7 +83,7 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply.Compress = true
 	reply.Id = state.Req.Id
 
-	// log response to dnstap
+	// Log the response to dnstap.
 	if taper != nil {
 		b.Type = msg.OutsideResponse(tap.Message_FORWARDER_RESPONSE)
 		b.Pack = reply.Pack
