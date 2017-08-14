@@ -11,7 +11,6 @@ import (
 
 func TestingData() (d *msg.Data) {
 	d = &msg.Data{
-		Type:        tap.Message_CLIENT_RESPONSE,
 		SocketFam:   tap.SocketFamily_INET,
 		SocketProto: tap.SocketProtocol_UDP,
 		Address:     net.ParseIP("10.240.0.1"),
