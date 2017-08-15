@@ -36,7 +36,7 @@ func (d *Data) ParseRemoteAddr(remote net.Addr) error {
 
 // Build returns a dnstap message with the wire-format message
 // when full.
-func (b *Builder) Build(full bool) (m *tap.Message, err error) {
+func (b *Builder) Message(full bool) (m *tap.Message, err error) {
 	m = &tap.Message{}
 	m.SocketFamily = &b.SocketFam
 	m.SocketProtocol = &b.SocketProto
@@ -53,12 +53,14 @@ func (b *Builder) Build(full bool) (m *tap.Message, err error) {
 		b.Msg = bin
 	}
 
-	b.Epoch()
 	b.Type(m, &b.Data)
 	return
 }
 
 type (
+	Message interface {
+		Message(full bool) (*tap.Message, error)
+	}
 	// Data helps to build a dnstap message.
 	Data struct {
 		Msg         []byte

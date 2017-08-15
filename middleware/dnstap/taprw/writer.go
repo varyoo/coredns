@@ -11,7 +11,7 @@ import (
 )
 
 type Taper interface {
-	Tap(*msg.Builder) error
+	Tap(msg.Message) error
 }
 
 // Single request use.
@@ -42,17 +42,20 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) error {
 	writeErr := w.ResponseWriter.WriteMsg(resp)
 	writeSec := msg.Epoch()
 
-	w.builder.RemoteAddr = w.ResponseWriter.RemoteAddr()
-	w.builder.Pack = w.Query.Pack
-	if err := w.Taper.Tap(&w.builder); err != nil {
+	b := &w.builder
+	b.Type = msg.ClientQuery
+	b.RemoteAddr = w.ResponseWriter.RemoteAddr()
+	b.Pack = w.Query.Pack
+	if err := w.Taper.Tap(b); err != nil {
 		w.err = fmt.Errorf("client query: %s", err)
 		// don't forget to call DnstapError later
 	}
 
 	if writeErr == nil {
-		w.builder.Pack = resp.Pack
-		w.builder.TimeSec = writeSec
-		if err := w.Taper.Tap(&w.builder); err != nil {
+		b.Type = msg.ClientResponse
+		b.Pack = resp.Pack
+		b.TimeSec = writeSec
+		if err := w.Taper.Tap(b); err != nil {
 			w.err = fmt.Errorf("client response: %s", err)
 		}
 	}

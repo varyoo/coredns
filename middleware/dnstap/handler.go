@@ -22,7 +22,7 @@ type Dnstap struct {
 type (
 	// Taper is implemented by the Context passed by the dnstap handler.
 	Taper interface {
-		Tap(*msg.Builder) error
+		Tap(msg.Message) error
 	}
 	tapContext struct {
 		context.Context
@@ -49,8 +49,8 @@ func (h Dnstap) TapMessage(m *tap.Message) error {
 	return tapMessageTo(h.Out, m)
 }
 
-func (h Dnstap) Tap(b *msg.Builder) error {
-	m, err := b.Build(h.Pack)
+func (h Dnstap) Tap(b msg.Message) error {
+	m, err := b.Message(h.Pack)
 	if err != nil {
 		return err
 	}
