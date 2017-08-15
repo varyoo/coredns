@@ -53,16 +53,16 @@ func MsgEqual(a, b *tap.Message) bool {
 	return reflect.DeepEqual(toComp(a), toComp(b))
 }
 
-type TrapTaper struct {
+type TrapTapper struct {
 	Trap []*tap.Message
 	Full bool
 }
 
-func (t *TrapTaper) TapMessage(m *tap.Message) error {
+func (t *TrapTapper) TapMessage(m *tap.Message) error {
 	t.Trap = append(t.Trap, m)
 	return nil
 }
 
-func (t *TrapTaper) TapBuilder() msg.Builder {
+func (t *TrapTapper) TapBuilder() msg.Builder {
 	return msg.Builder{Full: t.Full}
 }

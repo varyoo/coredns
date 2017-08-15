@@ -15,14 +15,13 @@ func init() {
 }
 
 func setup(c *caddy.Controller) error {
-	t := dnsserver.GetConfig(c).GetHandler("trace")
-	P := &Proxy{Trace: t}
-
 	upstreams, err := NewStaticUpstreams(&c.Dispenser)
 	if err != nil {
 		return middleware.Error("proxy", err)
 	}
 
+	t := dnsserver.GetConfig(c).GetHandler("trace")
+	P := &Proxy{Trace: t}
 	dnsserver.GetConfig(c).AddMiddleware(func(next middleware.Handler) middleware.Handler {
 		P.Next = next
 		P.Upstreams = &upstreams

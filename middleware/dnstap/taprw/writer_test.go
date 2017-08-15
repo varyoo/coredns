@@ -26,7 +26,7 @@ func TestDnstapError(t *testing.T) {
 	rw := ResponseWriter{
 		Query:          new(dns.Msg),
 		ResponseWriter: &mwtest.ResponseWriter{},
-		Taper:          TapFailer{},
+		Tapper:         TapFailer{},
 	}
 	if err := rw.WriteMsg(new(dns.Msg)); err != nil {
 		t.Errorf("dnstap error during Write: %s", err)
@@ -44,11 +44,11 @@ func testingMsg() (m *dns.Msg) {
 }
 
 func TestClientQueryResponse(t *testing.T) {
-	trapper := test.TrapTaper{Full: true}
+	trapper := test.TrapTapper{Full: true}
 	m := testingMsg()
 	rw := ResponseWriter{
 		Query:          m,
-		Taper:          &trapper,
+		Tapper:         &trapper,
 		ResponseWriter: &mwtest.ResponseWriter{},
 	}
 	d := test.TestingData()

@@ -11,8 +11,8 @@ import (
 	"github.com/miekg/dns"
 )
 
-// Taper is what ResponseWriter needs to log to dnstap.
-type Taper interface {
+// Tapper is what ResponseWriter needs to log to dnstap.
+type Tapper interface {
 	TapMessage(m *tap.Message) error
 	TapBuilder() msg.Builder
 }
@@ -23,7 +23,7 @@ type ResponseWriter struct {
 	queryEpoch uint64
 	Query      *dns.Msg
 	dns.ResponseWriter
-	Taper
+	Tapper
 	err error
 }
 

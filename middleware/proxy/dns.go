@@ -69,16 +69,16 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply.Id = state.Req.Id
 
 	// Log to dnstap.
-	taper := dnstap.TaperFromContext(ctx)
-	if taper != nil {
+	tapper := dnstap.TapperFromContext(ctx)
+	if tapper != nil {
 		// Query
-		b := taper.TapBuilder()
+		b := tapper.TapBuilder()
 		b.TimeSec = queryEpoch
 		err := b.AddrMsg(co.RemoteAddr(), state.Req)
 		if err != nil {
 			return reply, err
 		}
-		err = taper.TapMessage(b.ToOutsideQuery(tap.Message_FORWARDER_QUERY))
+		err = tapper.TapMessage(b.ToOutsideQuery(tap.Message_FORWARDER_QUERY))
 		if err != nil {
 			return reply, err
 		}
@@ -88,7 +88,7 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		if err = b.Msg(reply); err != nil {
 			return reply, err
 		}
-		err = taper.TapMessage(b.ToOutsideResponse(tap.Message_FORWARDER_RESPONSE))
+		err = tapper.TapMessage(b.ToOutsideResponse(tap.Message_FORWARDER_RESPONSE))
 		if err != nil {
 			return reply, err
 		}
