@@ -11,7 +11,6 @@ import (
 
 func TestingData() (d *msg.Data) {
 	d = &msg.Data{
-		Type:        tap.Message_CLIENT_RESPONSE,
 		SocketFam:   tap.SocketFamily_INET,
 		SocketProto: tap.SocketProtocol_UDP,
 		Address:     net.ParseIP("10.240.0.1"),
@@ -56,9 +55,14 @@ func MsgEqual(a, b *tap.Message) bool {
 
 type TrapTaper struct {
 	Trap []*tap.Message
+	Full bool
 }
 
 func (t *TrapTaper) TapMessage(m *tap.Message) error {
 	t.Trap = append(t.Trap, m)
 	return nil
+}
+
+func (t *TrapTaper) TapBuilder() msg.Builder {
+	return msg.Builder{Full: t.Full}
 }

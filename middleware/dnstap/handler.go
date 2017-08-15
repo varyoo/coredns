@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Dnstap is the dnstap handler.
 type Dnstap struct {
 	Next middleware.Handler
 	Out  io.Writer
@@ -22,7 +23,8 @@ type Dnstap struct {
 type (
 	// Taper is implemented by the Context passed by the dnstap handler.
 	Taper interface {
-		Tap(*msg.Builder) error
+		TapMessage(*tap.Message) error
+		TapBuilder() msg.Builder
 	}
 	tapContext struct {
 		context.Context
@@ -45,20 +47,19 @@ func tapMessageTo(w io.Writer, m *tap.Message) error {
 	return err
 }
 
+// TapMessage implements Taper.
 func (h Dnstap) TapMessage(m *tap.Message) error {
 	return tapMessageTo(h.Out, m)
 }
 
-func (h Dnstap) Tap(b *msg.Builder) error {
-	m, err := b.Build(h.Pack)
-	if err != nil {
-		return err
-	}
-	return tapMessageTo(h.Out, m)
+// TapBuilder implements Taper.
+func (h Dnstap) TapBuilder() msg.Builder {
+	return msg.Builder{Full: h.Pack}
 }
 
+// ServeDNS logs the client query and response to dnstap and passes the dnstap Context.
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
-	rw := &taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r, Pack: h.Pack}
+	rw := &taprw.ResponseWriter{ResponseWriter: w, Taper: &h, Query: r}
 	rw.QueryEpoch()
 
 	code, err := middleware.NextOrFailure(h.Name(), h.Next, tapContext{ctx, h}, rw, r)
@@ -73,4 +74,6 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 
 	return code, nil
 }
+
+// Name returns dnstap.
 func (h Dnstap) Name() string { return "dnstap" }

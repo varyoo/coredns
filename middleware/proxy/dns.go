@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
@@ -49,25 +48,11 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		return nil, err
 	}
 
-	// Setup dnstap from context.
-	taper := dnstap.TaperFromContext(ctx)
-	var taperr error
-	b := msg.Builder{} // will be reused for the response
-
-	if taper != nil {
-		b.FromConn(co) // same connection for the response
-		b.Type = msg.OutsideQuery(tap.Message_FORWARDER_QUERY)
-		b.Pack = state.Req.Pack
-
-		// Log the forwarded query to dnstap.
-		taperr = taper.Tap(&b)
-		if taperr != nil {
-			taperr = fmt.Errorf("dnstap: %s", err)
-		}
-	}
+	queryEpoch := msg.Epoch()
 
 	reply, _, err := d.ExchangeConn(state.Req, co)
 
+	responseEpoch := msg.Epoch()
 	co.Close()
 
 	if reply != nil && reply.Truncated {
@@ -83,16 +68,33 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply.Compress = true
 	reply.Id = state.Req.Id
 
-	// Log the response to dnstap.
+	// Log to dnstap.
+	taper := dnstap.TaperFromContext(ctx)
 	if taper != nil {
-		b.Type = msg.OutsideResponse(tap.Message_FORWARDER_RESPONSE)
-		b.Pack = reply.Pack
-		if err := taper.Tap(&b); err != nil {
-			return reply, fmt.Errorf("dnstap: %s", err)
+		// Query
+		b := taper.TapBuilder()
+		b.TimeSec = queryEpoch
+		err := b.AddrMsg(co.RemoteAddr(), state.Req)
+		if err != nil {
+			return reply, err
+		}
+		err = taper.TapMessage(b.ToOutsideQuery(tap.Message_FORWARDER_QUERY))
+		if err != nil {
+			return reply, err
+		}
+
+		// Response
+		b.TimeSec = responseEpoch
+		if err = b.Msg(reply); err != nil {
+			return reply, err
+		}
+		err = taper.TapMessage(b.ToOutsideResponse(tap.Message_FORWARDER_RESPONSE))
+		if err != nil {
+			return reply, err
 		}
 	}
 
-	return reply, taperr
+	return reply, nil
 }
 
 func (d *dnsEx) ExchangeConn(m *dns.Msg, co net.Conn) (*dns.Msg, time.Duration, error) {
