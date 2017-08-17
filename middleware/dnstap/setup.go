@@ -2,11 +2,13 @@ package dnstap
 
 import (
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/middleware"
 	"github.com/coredns/coredns/middleware/dnstap/out"
+	"github.com/coredns/coredns/middleware/pkg/dnsutil"
 
 	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyfile"
@@ -26,12 +28,19 @@ func wrapSetup(c *caddy.Controller) error {
 	return nil
 }
 
-func parseConfig(c *caddyfile.Dispenser) (path string, full bool, err error) {
+func parseConfig(c *caddyfile.Dispenser) (path string, socket, full bool, err error) {
 	c.Next() // directive name
 
 	if !c.Args(&path) {
 		err = c.ArgErr()
 		return
+	}
+
+	servers, err := dnsutil.ParseHostPortOrFile(path)
+	if err != nil {
+		socket = true
+	} else {
+		path = servers[0]
 	}
 
 	full = c.NextArg() && c.Val() == "full"
@@ -40,16 +49,21 @@ func parseConfig(c *caddyfile.Dispenser) (path string, full bool, err error) {
 }
 
 func setup(c *caddy.Controller) error {
-	path, full, err := parseConfig(&c.Dispenser)
+	path, socket, full, err := parseConfig(&c.Dispenser)
 	if err != nil {
 		return err
 	}
 
 	dnstap := Dnstap{Pack: full}
 
-	o, err := out.NewSocket(path)
-	if err != nil {
-		log.Printf("[WARN] Can't connect to %s at the moment", path)
+	var o io.WriteCloser
+	if socket {
+		o, err = out.NewSocket(path)
+		if err != nil {
+			log.Printf("[WARN] Can't connect to %s at the moment", path)
+		}
+	} else {
+		o = out.NewTCP(path)
 	}
 	dnstap.Out = o
 
