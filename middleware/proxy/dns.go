@@ -5,11 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/coredns/coredns/middleware/dnstap"
-	"github.com/coredns/coredns/middleware/dnstap/msg"
 	"github.com/coredns/coredns/request"
 
-	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
 )
 
@@ -31,13 +28,17 @@ func newDNSExWithOption(opt Options) *dnsEx {
 	return &dnsEx{Timeout: defaultTimeout * time.Second, Options: opt}
 }
 
+func (d *dnsEx) Transport() (t string) {
+	if d.Options.ForceTCP {
+		t = "tcp"
+	}
+	return
+}
 func (d *dnsEx) Protocol() string          { return "dns" }
 func (d *dnsEx) OnShutdown(p *Proxy) error { return nil }
 func (d *dnsEx) OnStartup(p *Proxy) error  { return nil }
 
 // Exchange implements the Exchanger interface.
-// When *dns.Msg is not nil it is valid.
-// When both *dns.Msg and error are not nil, the error should be reported.
 func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request) (*dns.Msg, error) {
 	proto := state.Proto()
 	if d.Options.ForceTCP {
@@ -48,11 +49,8 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 		return nil, err
 	}
 
-	queryEpoch := msg.Epoch()
-
 	reply, _, err := d.ExchangeConn(state.Req, co)
 
-	responseEpoch := msg.Epoch()
 	co.Close()
 
 	if reply != nil && reply.Truncated {
@@ -67,32 +65,6 @@ func (d *dnsEx) Exchange(ctx context.Context, addr string, state request.Request
 	reply, _ = state.Scrub(reply)
 	reply.Compress = true
 	reply.Id = state.Req.Id
-
-	// Log to dnstap.
-	tapper := dnstap.TapperFromContext(ctx)
-	if tapper != nil {
-		// Query
-		b := tapper.TapBuilder()
-		b.TimeSec = queryEpoch
-		err := b.AddrMsg(co.RemoteAddr(), state.Req)
-		if err != nil {
-			return reply, err
-		}
-		err = tapper.TapMessage(b.ToOutsideQuery(tap.Message_FORWARDER_QUERY))
-		if err != nil {
-			return reply, err
-		}
-
-		// Response
-		b.TimeSec = responseEpoch
-		if err = b.Msg(reply); err != nil {
-			return reply, err
-		}
-		err = tapper.TapMessage(b.ToOutsideResponse(tap.Message_FORWARDER_RESPONSE))
-		if err != nil {
-			return reply, err
-		}
-	}
 
 	return reply, nil
 }

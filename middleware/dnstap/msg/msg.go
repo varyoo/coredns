@@ -4,6 +4,7 @@ package msg
 import (
 	"errors"
 	"net"
+	"strconv"
 	"time"
 
 	tap "github.com/dnstap/golang-dnstap"
@@ -42,6 +43,31 @@ type Data struct {
 	Address     []byte
 	Port        uint32
 	TimeSec     uint64
+}
+
+// HostPort decodes into Data any string returned by dnsutil.ParseHostPortOrFile.
+func (d *Data) HostPort(addr string) (err error) {
+	ip, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return
+	}
+	p, err := strconv.ParseUint(port, 10, 32)
+	if err != nil {
+		return
+	}
+	d.Port = uint32(p)
+
+	if ip := net.ParseIP(ip); ip != nil {
+		d.Address = []byte(ip)
+		if ip := ip.To4(); ip != nil {
+			d.SocketFam = tap.SocketFamily_INET
+		} else {
+			d.SocketFam = tap.SocketFamily_INET6
+		}
+	} else {
+		err = errors.New("not an ip address")
+	}
+	return
 }
 
 // RemoteAddr parses the information about the remote address into Data.

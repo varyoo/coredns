@@ -109,11 +109,11 @@ func (p Proxy) lookup(state request.Request) (*dns.Msg, error) {
 
 			atomic.AddInt64(&host.Conns, 1)
 
-			reply, _ := upstream.Exchanger().Exchange(context.TODO(), host.Name, state)
+			reply, backendErr := upstream.Exchanger().Exchange(context.TODO(), host.Name, state)
 
 			atomic.AddInt64(&host.Conns, -1)
 
-			if reply != nil {
+			if backendErr == nil {
 				return reply, nil
 			}
 			timeout := host.FailTimeout
