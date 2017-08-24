@@ -7,7 +7,13 @@ import (
 	"github.com/coredns/coredns/middleware/dnstap/msg"
 
 	tap "github.com/dnstap/golang-dnstap"
+	"golang.org/x/net/context"
 )
+
+type Context struct {
+	context.Context
+	TrapTapper
+}
 
 func TestingData() (d *msg.Data) {
 	d = &msg.Data{
