@@ -10,6 +10,7 @@ import (
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
+	"golang.org/x/net/context"
 )
 
 func testCase(t *testing.T, ex Exchanger, q, r *dns.Msg, datq, datr *msg.Data) {
@@ -46,4 +47,11 @@ func TestDnstap(t *testing.T) {
 	tapr.SocketProto = tap.SocketProtocol_TCP
 	testCase(t, newDNSExWithOption(Options{ForceTCP: true}), q, r, tapq, tapr)
 	testCase(t, newGoogle("", []string{"8.8.8.8:53", "8.8.4.4:53"}), q, r, tapq, tapr)
+}
+
+func TestNoDnstap(t *testing.T) {
+	err := toDnstap(context.TODO(), "", nil, request.Request{}, nil, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
