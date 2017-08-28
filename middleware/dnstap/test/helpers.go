@@ -10,11 +10,13 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Context is a message trap.
 type Context struct {
 	context.Context
 	TrapTapper
 }
 
+// TestingData returns the Data matching coredns/test.ResponseWriter.
 func TestingData() (d *msg.Data) {
 	d = &msg.Data{
 		SocketFam:   tap.SocketFamily_INET,
@@ -55,20 +57,24 @@ func toComp(m *tap.Message) comp {
 	}
 }
 
+// MsgEqual compares two dnstap messages ignoring timestamps.
 func MsgEqual(a, b *tap.Message) bool {
 	return reflect.DeepEqual(toComp(a), toComp(b))
 }
 
+// TrapTapper traps messages.
 type TrapTapper struct {
 	Trap []*tap.Message
 	Full bool
 }
 
+// TapMessage adds the message to the trap.
 func (t *TrapTapper) TapMessage(m *tap.Message) error {
 	t.Trap = append(t.Trap, m)
 	return nil
 }
 
+// TapBuilder returns a test msg.Builder.
 func (t *TrapTapper) TapBuilder() msg.Builder {
 	return msg.Builder{Full: t.Full}
 }
