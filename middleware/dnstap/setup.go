@@ -39,6 +39,7 @@ func parseConfig(c *caddyfile.Dispenser) (path string, socket, full bool, err er
 	servers, err := dnsutil.ParseHostPortOrFile(path)
 	if err != nil {
 		socket = true
+		err = nil
 	} else {
 		path = servers[0]
 	}
