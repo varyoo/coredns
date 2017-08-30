@@ -24,13 +24,13 @@ dnstap /tmp/dnstap.sock
 Log information including the wire-format DNS message about client requests and responses to */tmp/dnstap.sock*.
 
 ~~~ txt
-dnstap /tmp/dnstap.sock full
+dnstap unix:///tmp/dnstap.sock full
 ~~~
 
 Log to a remote endpoint.
 
 ~~~ txt
-dnstap 127.0.0.1:6000 full
+dnstap tcp://127.0.0.1:6000 full
 ~~~
 
 ## Dnstap command line tool
