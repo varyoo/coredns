@@ -14,6 +14,7 @@ type Exchanger interface {
 	Protocol() string
 
 	// Transport returns the only transport protocol used by this Exchanger or "".
+	// If the return value is "", Exchange must use `state.Proto()`.
 	Transport() string
 
 	OnStartup(*Proxy) error

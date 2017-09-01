@@ -46,14 +46,14 @@ type Data struct {
 }
 
 // HostPort decodes into Data any string returned by dnsutil.ParseHostPortOrFile.
-func (d *Data) HostPort(addr string) (err error) {
+func (d *Data) HostPort(addr string) error {
 	ip, port, err := net.SplitHostPort(addr)
 	if err != nil {
-		return
+		return err
 	}
 	p, err := strconv.ParseUint(port, 10, 32)
 	if err != nil {
-		return
+		return err
 	}
 	d.Port = uint32(p)
 
@@ -64,10 +64,10 @@ func (d *Data) HostPort(addr string) (err error) {
 		} else {
 			d.SocketFam = tap.SocketFamily_INET6
 		}
+		return nil
 	} else {
-		err = errors.New("not an ip address")
+		return errors.New("not an ip address")
 	}
-	return
 }
 
 // RemoteAddr parses the information about the remote address into Data.
