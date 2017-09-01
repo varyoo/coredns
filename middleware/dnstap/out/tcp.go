@@ -55,7 +55,7 @@ func (s *TCP) Flush() (err error) {
 	return
 }
 
-// Close is an alias to Flush.
+// Close is an alias to Flush to satisfy io.WriteCloser similarly to type Socket.
 func (s *TCP) Close() error {
 	return s.Flush()
 }

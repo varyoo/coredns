@@ -18,7 +18,7 @@ func TestTcp(t *testing.T) {
 	tcp := NewTCP("localhost:14000")
 
 	if err := sendOneTcp(tcp); err == nil {
-		t.Fatal("not listening but no error")
+		t.Fatal("Not listening but no error.")
 		return
 	}
 
