@@ -14,45 +14,43 @@ type TCP struct {
 }
 
 // NewTCP returns a TCP writer.
-func NewTCP(address string) (s *TCP) {
-	s = &TCP{address: address}
+func NewTCP(address string) *TCP {
+	s := &TCP{address: address}
 	s.frames = make([][]byte, 0, 13) // 13 messages buffer
-	return
+	return s
 }
 
 // Write a single Frame Streams frame.
 func (s *TCP) Write(frame []byte) (n int, err error) {
 	s.frames = append(s.frames, frame)
-	n = len(frame)
 	if len(s.frames) == cap(s.frames) {
-		err = s.Flush()
+		return len(frame), s.Flush()
 	}
-	return
+	return len(frame), nil
 }
 
 // Flush the remaining frames.
-func (s *TCP) Flush() (err error) {
+func (s *TCP) Flush() error {
 	defer func() {
 		s.frames = s.frames[0:]
 	}()
 	c, err := net.DialTimeout("tcp", s.address, time.Second)
 	if err != nil {
-		return
+		return err
 	}
 	enc, err := fs.NewEncoder(c, &fs.EncoderOptions{
 		ContentType:   []byte("protobuf:dnstap.Dnstap"),
 		Bidirectional: true,
 	})
 	if err != nil {
-		return
+		return err
 	}
 	for _, frame := range s.frames {
 		if _, err = enc.Write(frame); err != nil {
-			return
+			return err
 		}
 	}
-	err = enc.Flush()
-	return
+	return enc.Flush()
 }
 
 // Close is an alias to Flush to satisfy io.WriteCloser similarly to type Socket.
