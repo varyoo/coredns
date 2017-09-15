@@ -8,6 +8,7 @@ import (
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
+	"github.com/coredns/coredns/plugin/dnstap/dnstapio"
 	"github.com/coredns/coredns/plugin/dnstap/out"
 	"github.com/coredns/coredns/plugin/pkg/dnsutil"
 
@@ -79,7 +80,7 @@ func setup(c *caddy.Controller) error {
 	} else {
 		o = out.NewTCP(conf.target)
 	}
-	dnstap.Out = o
+	dnstap.IO = dnstapio.New(o)
 
 	c.OnShutdown(func() error {
 		if err := o.Close(); err != nil {
