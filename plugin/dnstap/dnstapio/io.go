@@ -10,10 +10,9 @@ import (
 
 // DnstapIO wraps the dnstap I/O routine.
 type DnstapIO struct {
-	writer  io.WriteCloser
-	queue   chan tap.Dnstap
-	stop    chan bool
-	dropped int
+	writer io.WriteCloser
+	queue  chan tap.Dnstap
+	stop   chan bool
 }
 
 // Protocol is either `out.TCP` or `out.Socket`.
@@ -39,7 +38,6 @@ func (dio *DnstapIO) Dnstap(payload tap.Dnstap) {
 	select {
 	case dio.queue <- payload:
 	default:
-		dio.dropped++
 		fmt.Println("[WARN] Dnstap payload dropped.")
 	}
 }
@@ -52,7 +50,6 @@ func (dio *DnstapIO) serve() {
 			if err == nil {
 				dio.writer.Write(frame)
 			} else {
-				dio.dropped++
 				fmt.Println("[ERROR] Invalid dnstap payload dropped.")
 			}
 		case <-dio.stop:
