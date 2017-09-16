@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+// DnstapIO wraps the dnstap I/O routine.
 type DnstapIO struct {
 	writer  io.WriteCloser
 	queue   chan tap.Dnstap
@@ -15,7 +16,16 @@ type DnstapIO struct {
 	dropped int
 }
 
-func New(w io.WriteCloser) *DnstapIO {
+// Protocol is either `out.TCP` or `out.Socket`.
+type Protocol interface {
+	// Write takes a single frame at once.
+	Write([]byte) (int, error)
+
+	Close() error
+}
+
+// New dnstap I/O routine from Protocol.
+func New(w Protocol) *DnstapIO {
 	dio := DnstapIO{}
 	dio.writer = w
 	dio.queue = make(chan tap.Dnstap, 10)
@@ -24,6 +34,7 @@ func New(w io.WriteCloser) *DnstapIO {
 	return &dio
 }
 
+// Dnstap enqueues the payload for log.
 func (dio *DnstapIO) Dnstap(payload tap.Dnstap) {
 	select {
 	case dio.queue <- payload:
@@ -52,6 +63,7 @@ func (dio *DnstapIO) serve() {
 	}
 }
 
+// Close waits until the I/O routine is finished to return.
 func (dio DnstapIO) Close() error {
 	dio.stop <- true
 	<-dio.stop

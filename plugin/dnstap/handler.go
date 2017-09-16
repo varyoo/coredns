@@ -16,12 +16,12 @@ import (
 // Dnstap is the dnstap handler.
 type Dnstap struct {
 	Next plugin.Handler
-	IO   IOThread
+	IO   IORoutine
 	Pack bool
 }
 
 type (
-	IOThread interface {
+	IORoutine interface {
 		Dnstap(tap.Dnstap)
 	}
 	// Tapper is implemented by the Context passed by the dnstap handler.
