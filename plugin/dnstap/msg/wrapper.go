@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+// Wrap a dnstap message in the top-level dnstap type.
 func Wrap(m *lib.Message) lib.Dnstap {
 	t := lib.Dnstap_MESSAGE
 	return lib.Dnstap{

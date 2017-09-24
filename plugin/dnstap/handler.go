@@ -21,6 +21,7 @@ type Dnstap struct {
 }
 
 type (
+	// IORoutine is the dnstap I/O thread as defined by: <http://dnstap.info/Architecture>.
 	IORoutine interface {
 		Dnstap(tap.Dnstap)
 	}
