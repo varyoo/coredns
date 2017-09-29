@@ -3,6 +3,7 @@ package dnstapio
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -27,7 +28,7 @@ func (b buf) Close() error {
 func TestRace(t *testing.T) {
 	b := buf{&bytes.Buffer{}, 100 * time.Millisecond}
 	dio := New(b)
-	dio.iolog = ioutil.Discard // don't flood Travis
+	dio.log = log.New(ioutil.Discard, "", log.LstdFlags) // don't flood Travis
 	wg := &sync.WaitGroup{}
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
