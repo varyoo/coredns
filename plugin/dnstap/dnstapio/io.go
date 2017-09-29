@@ -1,7 +1,6 @@
 package dnstapio
 
 import (
-	"io"
 	"log"
 
 	tap "github.com/dnstap/golang-dnstap"
@@ -10,9 +9,9 @@ import (
 
 // DnstapIO wraps the dnstap I/O routine.
 type DnstapIO struct {
-	writer io.WriteCloser
-	queue  chan tap.Dnstap
-	stop   chan bool
+	protocol Protocol
+	queue    chan tap.Dnstap
+	stop     chan bool
 }
 
 // Protocol is either `out.TCP` or `out.Socket`.
@@ -26,7 +25,7 @@ type Protocol interface {
 // New dnstap I/O routine from Protocol.
 func New(w Protocol) *DnstapIO {
 	dio := DnstapIO{}
-	dio.writer = w
+	dio.protocol = w
 	dio.queue = make(chan tap.Dnstap, 10)
 	dio.stop = make(chan bool)
 	go dio.serve()
@@ -48,7 +47,7 @@ func (dio *DnstapIO) serve() {
 		case payload := <-dio.queue:
 			frame, err := proto.Marshal(&payload)
 			if err == nil {
-				dio.writer.Write(frame)
+				dio.protocol.Write(frame)
 			} else {
 				log.Printf("[ERROR] Invalid dnstap payload dropped: %s\n", err)
 			}
@@ -65,5 +64,5 @@ func (dio DnstapIO) Close() error {
 	dio.stop <- true
 	<-dio.stop
 	close(dio.stop)
-	return dio.writer.Close()
+	return dio.protocol.Close()
 }
