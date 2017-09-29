@@ -2,6 +2,7 @@ package dnstapio
 
 import (
 	"bytes"
+	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ func (b buf) Close() error {
 func TestRace(t *testing.T) {
 	b := buf{&bytes.Buffer{}, 100 * time.Millisecond}
 	dio := New(b)
+	dio.iolog = ioutil.Discard // don't flood Travis
 	wg := &sync.WaitGroup{}
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
@@ -38,7 +40,8 @@ func TestRace(t *testing.T) {
 					return
 				default:
 					time.Sleep(50 * time.Millisecond)
-					dio.Dnstap(tap.Dnstap{})
+					t := tap.Dnstap_MESSAGE
+					dio.Dnstap(tap.Dnstap{Type: &t})
 				}
 			}
 		}()
