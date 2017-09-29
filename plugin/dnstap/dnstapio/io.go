@@ -3,7 +3,6 @@ package dnstapio
 import (
 	"io"
 	"log"
-	"os"
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/golang/protobuf/proto"
@@ -11,7 +10,6 @@ import (
 
 // DnstapIO wraps the dnstap I/O routine.
 type DnstapIO struct {
-	log    *log.Logger
 	writer io.WriteCloser
 	queue  chan tap.Dnstap
 	stop   chan bool
@@ -27,9 +25,7 @@ type Protocol interface {
 
 // New dnstap I/O routine from Protocol.
 func New(w Protocol) *DnstapIO {
-	dio := DnstapIO{
-		log: log.New(os.Stdout, "", log.LstdFlags),
-	}
+	dio := DnstapIO{}
 	dio.writer = w
 	dio.queue = make(chan tap.Dnstap, 10)
 	dio.stop = make(chan bool)
@@ -42,7 +38,7 @@ func (dio *DnstapIO) Dnstap(payload tap.Dnstap) {
 	select {
 	case dio.queue <- payload:
 	default:
-		dio.log.Println("[WARN] Dnstap payload dropped.")
+		log.Println("[WARN] Dnstap payload dropped.")
 	}
 }
 
@@ -54,7 +50,7 @@ func (dio *DnstapIO) serve() {
 			if err == nil {
 				dio.writer.Write(frame)
 			} else {
-				dio.log.Printf("[ERROR] Invalid dnstap payload dropped: %s\n", err)
+				log.Printf("[ERROR] Invalid dnstap payload dropped: %s\n", err)
 			}
 		case <-dio.stop:
 			close(dio.queue)

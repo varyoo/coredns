@@ -11,6 +11,10 @@ import (
 	tap "github.com/dnstap/golang-dnstap"
 )
 
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
+
 type buf struct {
 	*bytes.Buffer
 	cost time.Duration
@@ -28,7 +32,6 @@ func (b buf) Close() error {
 func TestRace(t *testing.T) {
 	b := buf{&bytes.Buffer{}, 100 * time.Millisecond}
 	dio := New(b)
-	dio.log = log.New(ioutil.Discard, "", log.LstdFlags) // don't flood Travis
 	wg := &sync.WaitGroup{}
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
