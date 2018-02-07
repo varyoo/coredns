@@ -11,8 +11,10 @@ import (
 
 // Dnstap is the dnstap handler.
 type Dnstap struct {
-	Next           plugin.Handler
-	IO             IORoutine
+	Next plugin.Handler
+	IO   IORoutine
+
+	// Set to true to include the relevant raw DNS message into the dnstap messages.
 	JoinRawMessage bool
 
 	err error
