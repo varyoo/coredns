@@ -1,11 +1,7 @@
 package dnstap
 
 import (
-	"fmt"
-	"io"
-
 	"github.com/coredns/coredns/plugin"
-	"github.com/coredns/coredns/plugin/dnstap/msg"
 	"github.com/coredns/coredns/plugin/dnstap/taprw"
 
 	tap "github.com/dnstap/golang-dnstap"
@@ -29,7 +25,7 @@ type (
 	}
 	// Tapper is implemented by the Context passed by the dnstap handler.
 	Tapper interface {
-		TapMessage(func() (*tap.Message, error))
+		TapMessage(message *tap.Message, errorWhileBuildingMessage error)
 		Pack() bool
 	}
 	tapContext struct {
@@ -52,25 +48,18 @@ func TapperFromContext(ctx context.Context) (t Tapper) {
 	return
 }
 
-func tapMessageTo(w io.Writer, m *tap.Message) error {
-	frame, err := msg.Marshal(m)
-	if err != nil {
-		return fmt.Errorf("marshal: %s", err)
-	}
-	_, err = w.Write(frame)
-	return err
-}
-
 // TapMessage implements Tapper.
-func (h Dnstap) TapMessage(build func() (*tap.Message, error)) {
-	m, err := build()
+func (h Dnstap) TapMessage(m *tap.Message, err error) {
 	if err != nil {
 		h.err = err
 		return
 	}
 
-	h.IO.Dnstap(msg.Wrap(m))
-	return
+	t := tap.Dnstap_MESSAGE
+	h.IO.Dnstap(tap.Dnstap{
+		Type:    &t,
+		Message: m,
+	})
 }
 
 func (h Dnstap) Pack() bool {

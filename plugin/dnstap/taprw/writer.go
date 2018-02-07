@@ -20,7 +20,7 @@ type SendOption struct {
 
 // Tapper is what ResponseWriter needs to log to dnstap.
 type Tapper interface {
-	TapMessage(func() (*tap.Message, error))
+	TapMessage(*tap.Message, error)
 	Pack() bool
 }
 
@@ -43,7 +43,6 @@ func (w *ResponseWriter) SetQueryEpoch() {
 
 // WriteMsg writes back the response to the client and THEN works on logging the request
 // and response to dnstap.
-// Dnstap errors are to be checked by DnstapError.
 func (w *ResponseWriter) WriteMsg(resp *dns.Msg) (writeErr error) {
 	writeErr = w.ResponseWriter.WriteMsg(resp)
 	writeEpoch := uint64(time.Now().Unix())
@@ -54,7 +53,7 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) (writeErr error) {
 		if w.Pack() {
 			b.Msg(w.Query)
 		}
-		w.TapMessage(b.Addr(w.ResponseWriter.RemoteAddr()).ToClientQuery)
+		w.TapMessage(b.Addr(w.ResponseWriter.RemoteAddr()).ToClientQuery())
 	}
 
 	if w.Send == nil || w.Send.Cr {
@@ -62,7 +61,7 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) (writeErr error) {
 			if w.Pack() {
 				b.Msg(resp)
 			}
-			w.TapMessage(b.Time(writeEpoch).ToClientResponse)
+			w.TapMessage(b.Time(writeEpoch).ToClientResponse())
 		}
 	}
 

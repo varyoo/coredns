@@ -17,7 +17,7 @@ func testingMsg() (m *dns.Msg) {
 }
 
 func TestClientQueryResponse(t *testing.T) {
-	trapper := test.TrapTapper{Full: true}
+	trapper := test.TrapTapper{Full: true, Test: t}
 	m := testingMsg()
 	rw := ResponseWriter{
 		Query:          m,

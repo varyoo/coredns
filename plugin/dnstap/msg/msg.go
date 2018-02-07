@@ -123,39 +123,35 @@ func (d *Builder) ToClientQuery() (*tap.Message, error) {
 }
 
 // ToOutsideQuery transforms the data into a forwarder or resolver query message.
-func (d *Builder) ToOutsideQuery(t tap.Message_Type) func() (*tap.Message, error) {
-	return func() (*tap.Message, error) {
-		if d.err != nil {
-			return nil, d.err
-		}
-
-		return &tap.Message{
-			Type:            &t,
-			SocketFamily:    &d.SocketFam,
-			SocketProtocol:  &d.SocketProto,
-			QueryTimeSec:    &d.TimeSec,
-			QueryMessage:    d.Packed,
-			ResponseAddress: d.Address,
-			ResponsePort:    &d.Port,
-		}, nil
+func (d *Builder) ToOutsideQuery(t tap.Message_Type) (*tap.Message, error) {
+	if d.err != nil {
+		return nil, d.err
 	}
+
+	return &tap.Message{
+		Type:            &t,
+		SocketFamily:    &d.SocketFam,
+		SocketProtocol:  &d.SocketProto,
+		QueryTimeSec:    &d.TimeSec,
+		QueryMessage:    d.Packed,
+		ResponseAddress: d.Address,
+		ResponsePort:    &d.Port,
+	}, nil
 }
 
 // ToOutsideResponse transforms the data into a forwarder or resolver response message.
-func (d *Builder) ToOutsideResponse(t tap.Message_Type) func() (*tap.Message, error) {
-	return func() (*tap.Message, error) {
-		if d.err != nil {
-			return nil, d.err
-		}
-
-		return &tap.Message{
-			Type:            &t,
-			SocketFamily:    &d.SocketFam,
-			SocketProtocol:  &d.SocketProto,
-			ResponseTimeSec: &d.TimeSec,
-			ResponseMessage: d.Packed,
-			ResponseAddress: d.Address,
-			ResponsePort:    &d.Port,
-		}, nil
+func (d *Builder) ToOutsideResponse(t tap.Message_Type) (*tap.Message, error) {
+	if d.err != nil {
+		return nil, d.err
 	}
+
+	return &tap.Message{
+		Type:            &t,
+		SocketFamily:    &d.SocketFam,
+		SocketProtocol:  &d.SocketProto,
+		ResponseTimeSec: &d.TimeSec,
+		ResponseMessage: d.Packed,
+		ResponseAddress: d.Address,
+		ResponsePort:    &d.Port,
+	}, nil
 }

@@ -3,6 +3,7 @@ package test
 import (
 	"net"
 	"reflect"
+	"testing"
 
 	"github.com/coredns/coredns/plugin/dnstap/msg"
 
@@ -66,6 +67,7 @@ func MsgEqual(a, b *tap.Message) bool {
 type TrapTapper struct {
 	Trap []*tap.Message
 	Full bool
+	Test *testing.T
 }
 
 func (t *TrapTapper) Pack() bool {
@@ -73,7 +75,9 @@ func (t *TrapTapper) Pack() bool {
 }
 
 // TapMessage adds the message to the trap.
-func (t *TrapTapper) TapMessage(build func() (*tap.Message, error)) {
-	m, _ := build()
+func (t *TrapTapper) TapMessage(m *tap.Message, err error) {
+	if err != nil {
+		t.Test.Fatal("TrapTapper can't fail", err)
+	}
 	t.Trap = append(t.Trap, m)
 }
