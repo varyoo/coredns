@@ -14,7 +14,7 @@ type Builder struct {
 	Packed      []byte
 	SocketProto tap.SocketProtocol
 	SocketFam   tap.SocketFamily
-	Address     []byte
+	Address     net.IP
 	Port        uint32
 	TimeSec     uint64
 	err         error
@@ -40,7 +40,7 @@ func (b *Builder) Addr(remote net.Addr) *Builder {
 		return b
 	}
 
-	if a := net.IP(b.Address); a.To4() != nil {
+	if b.Address.To4() != nil {
 		b.SocketFam = tap.SocketFamily_INET
 	} else {
 		b.SocketFam = tap.SocketFamily_INET6
