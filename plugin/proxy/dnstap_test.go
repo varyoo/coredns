@@ -18,6 +18,7 @@ func testCase(t *testing.T, ex Exchanger, q, r *dns.Msg, datq, datr *msg.Builder
 	tapq, _ := datq.ToOutsideQuery(tap.Message_FORWARDER_QUERY)
 	tapr, _ := datr.ToOutsideResponse(tap.Message_FORWARDER_RESPONSE)
 	ctx := test.Context{}
+	ctx.Test = t
 	toDnstap(&ctx, "10.240.0.1:40212", ex,
 		request.Request{W: &mwtest.ResponseWriter{}, Req: q}, r, time.Now())
 	if len(ctx.Trap) != 2 {
