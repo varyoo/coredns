@@ -70,6 +70,7 @@ type TrapTapper struct {
 	Test *testing.T
 }
 
+// Pack returns field Full.
 func (t *TrapTapper) Pack() bool {
 	return t.Full
 }
