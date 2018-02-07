@@ -15,9 +15,11 @@ import (
 
 // Dnstap is the dnstap handler.
 type Dnstap struct {
-	Next plugin.Handler
-	IO   IORoutine
-	Pack bool
+	Next           plugin.Handler
+	IO             IORoutine
+	JoinRawMessage bool
+
+	err error
 }
 
 type (
@@ -27,8 +29,8 @@ type (
 	}
 	// Tapper is implemented by the Context passed by the dnstap handler.
 	Tapper interface {
-		TapMessage(*tap.Message) error
-		TapBuilder() msg.Builder
+		TapMessage(func() (*tap.Message, error))
+		Pack() bool
 	}
 	tapContext struct {
 		context.Context
@@ -60,14 +62,19 @@ func tapMessageTo(w io.Writer, m *tap.Message) error {
 }
 
 // TapMessage implements Tapper.
-func (h Dnstap) TapMessage(m *tap.Message) error {
+func (h Dnstap) TapMessage(build func() (*tap.Message, error)) {
+	m, err := build()
+	if err != nil {
+		h.err = err
+		return
+	}
+
 	h.IO.Dnstap(msg.Wrap(m))
-	return nil
+	return
 }
 
-// TapBuilder implements Tapper.
-func (h Dnstap) TapBuilder() msg.Builder {
-	return msg.Builder{Full: h.Pack}
+func (h Dnstap) Pack() bool {
+	return h.JoinRawMessage
 }
 
 // ServeDNS logs the client query and response to dnstap and passes the dnstap Context.
@@ -87,7 +94,7 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 		return code, err
 	}
 
-	if err := rw.DnstapError(); err != nil {
+	if h.err != nil {
 		return code, plugin.Error("dnstap", err)
 	}
 

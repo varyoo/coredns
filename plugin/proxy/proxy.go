@@ -97,14 +97,14 @@ func (p Proxy) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (
 				child.Finish()
 			}
 
-			taperr := toDnstap(ctx, host.Name, upstream.Exchanger(), state, reply, start)
+			toDnstap(ctx, host.Name, upstream.Exchanger(), state, reply, start)
 
 			if backendErr == nil {
 				w.WriteMsg(reply)
 
 				RequestDuration.WithLabelValues(state.Proto(), upstream.Exchanger().Protocol(), familyToString(state.Family()), host.Name).Observe(time.Since(start).Seconds())
 
-				return 0, taperr
+				return 0, nil
 			}
 
 			// A "ANY isc.org" query is being dropped by ISC's nameserver, we see this as a i/o timeout, but

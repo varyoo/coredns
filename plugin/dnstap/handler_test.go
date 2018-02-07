@@ -20,8 +20,8 @@ func testCase(t *testing.T, tapq, tapr *tap.Message, q, r *dns.Msg) {
 
 			return 0, w.WriteMsg(r)
 		}),
-		IO:   &w,
-		Pack: false,
+		IO:             &w,
+		JoinRawMessage: false,
 	}
 	_, err := h.ServeDNS(context.TODO(), &mwtest.ResponseWriter{}, q)
 	if err != nil {
@@ -52,7 +52,13 @@ func TestDnstap(t *testing.T) {
 			mwtest.A("example.org. 3600	IN	A 10.0.0.1"),
 		},
 	}.Msg()
-	tapq := test.TestingData().ToClientQuery()
-	tapr := test.TestingData().ToClientResponse()
+	tapq, err := test.TestingData().ToClientQuery()
+	if err != nil {
+		t.Fatal("Testing data must build", err)
+	}
+	tapr, err := test.TestingData().ToClientResponse()
+	if err != nil {
+		t.Fatal("Testing data must build", err)
+	}
 	testCase(t, tapq, tapr, q, r)
 }
