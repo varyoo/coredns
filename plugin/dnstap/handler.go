@@ -62,6 +62,7 @@ func (h Dnstap) TapMessage(m *tap.Message, err error) {
 	})
 }
 
+// Pack returns true if the raw DNS message should be included into the dnstap messages.
 func (h Dnstap) Pack() bool {
 	return h.JoinRawMessage
 }

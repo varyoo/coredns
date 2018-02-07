@@ -9,6 +9,7 @@ import (
 	"github.com/miekg/dns"
 )
 
+// Builder helps to build a Dnstap message.
 type Builder struct {
 	Packed      []byte
 	SocketProto tap.SocketProtocol
@@ -19,6 +20,7 @@ type Builder struct {
 	err         error
 }
 
+// Addr adds the remote address to the message.
 func (b *Builder) Addr(remote net.Addr) *Builder {
 	if b.err != nil {
 		return b
@@ -46,6 +48,7 @@ func (b *Builder) Addr(remote net.Addr) *Builder {
 	return b
 }
 
+// Msg adds the raw DNS message to the dnstap message.
 func (b *Builder) Msg(m *dns.Msg) *Builder {
 	if b.err != nil {
 		return b
@@ -55,6 +58,7 @@ func (b *Builder) Msg(m *dns.Msg) *Builder {
 	return b
 }
 
+// HostPort adds the remote address as encoded by dnsutil.ParseHostPortOrFile to the message.
 func (b *Builder) HostPort(addr string) *Builder {
 	ip, port, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -81,77 +85,78 @@ func (b *Builder) HostPort(addr string) *Builder {
 	return b
 }
 
+// Time adds the timestamp to the message.
 func (b *Builder) Time(ts uint64) *Builder {
 	b.TimeSec = ts
 	return b
 }
 
 // ToClientResponse transforms Data into a client response message.
-func (d *Builder) ToClientResponse() (*tap.Message, error) {
-	if d.err != nil {
-		return nil, d.err
+func (b *Builder) ToClientResponse() (*tap.Message, error) {
+	if b.err != nil {
+		return nil, b.err
 	}
 
 	t := tap.Message_CLIENT_RESPONSE
 	return &tap.Message{
 		Type:            &t,
-		SocketFamily:    &d.SocketFam,
-		SocketProtocol:  &d.SocketProto,
-		ResponseTimeSec: &d.TimeSec,
-		ResponseMessage: d.Packed,
-		QueryAddress:    d.Address,
-		QueryPort:       &d.Port,
+		SocketFamily:    &b.SocketFam,
+		SocketProtocol:  &b.SocketProto,
+		ResponseTimeSec: &b.TimeSec,
+		ResponseMessage: b.Packed,
+		QueryAddress:    b.Address,
+		QueryPort:       &b.Port,
 	}, nil
 }
 
 // ToClientQuery transforms Data into a client query message.
-func (d *Builder) ToClientQuery() (*tap.Message, error) {
-	if d.err != nil {
-		return nil, d.err
+func (b *Builder) ToClientQuery() (*tap.Message, error) {
+	if b.err != nil {
+		return nil, b.err
 	}
 
 	t := tap.Message_CLIENT_QUERY
 	return &tap.Message{
 		Type:           &t,
-		SocketFamily:   &d.SocketFam,
-		SocketProtocol: &d.SocketProto,
-		QueryTimeSec:   &d.TimeSec,
-		QueryMessage:   d.Packed,
-		QueryAddress:   d.Address,
-		QueryPort:      &d.Port,
+		SocketFamily:   &b.SocketFam,
+		SocketProtocol: &b.SocketProto,
+		QueryTimeSec:   &b.TimeSec,
+		QueryMessage:   b.Packed,
+		QueryAddress:   b.Address,
+		QueryPort:      &b.Port,
 	}, nil
 }
 
 // ToOutsideQuery transforms the data into a forwarder or resolver query message.
-func (d *Builder) ToOutsideQuery(t tap.Message_Type) (*tap.Message, error) {
-	if d.err != nil {
-		return nil, d.err
+func (b *Builder) ToOutsideQuery(t tap.Message_Type) (*tap.Message, error) {
+	if b.err != nil {
+		return nil, b.err
 	}
 
 	return &tap.Message{
 		Type:            &t,
-		SocketFamily:    &d.SocketFam,
-		SocketProtocol:  &d.SocketProto,
-		QueryTimeSec:    &d.TimeSec,
-		QueryMessage:    d.Packed,
-		ResponseAddress: d.Address,
-		ResponsePort:    &d.Port,
+		SocketFamily:    &b.SocketFam,
+		SocketProtocol:  &b.SocketProto,
+		QueryTimeSec:    &b.TimeSec,
+		QueryMessage:    b.Packed,
+		ResponseAddress: b.Address,
+		ResponsePort:    &b.Port,
 	}, nil
 }
 
 // ToOutsideResponse transforms the data into a forwarder or resolver response message.
-func (d *Builder) ToOutsideResponse(t tap.Message_Type) (*tap.Message, error) {
-	if d.err != nil {
-		return nil, d.err
+func (b *Builder) ToOutsideResponse(t tap.Message_Type) (*tap.Message, error) {
+	if b.err != nil {
+		return nil, b.err
 	}
 
 	return &tap.Message{
 		Type:            &t,
-		SocketFamily:    &d.SocketFam,
-		SocketProtocol:  &d.SocketProto,
-		ResponseTimeSec: &d.TimeSec,
-		ResponseMessage: d.Packed,
-		ResponseAddress: d.Address,
-		ResponsePort:    &d.Port,
+		SocketFamily:    &b.SocketFam,
+		SocketProtocol:  &b.SocketProto,
+		ResponseTimeSec: &b.TimeSec,
+		ResponseMessage: b.Packed,
+		ResponseAddress: b.Address,
+		ResponsePort:    &b.Port,
 	}, nil
 }
