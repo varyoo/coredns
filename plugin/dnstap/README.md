@@ -74,14 +74,12 @@ import (
 
 func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
     // log client query to Dnstap
-    t := dnstap.TapperFromContext(ctx)
-    if t != nil {
-        b := msg.Builder{TimeSec: uint64(time.Now().Unix())}
+    if t := dnstap.TapperFromContext(ctx); t != nil {
+        b := msg.New().Time(time.Now())
         if t.Pack() {
             b.Msg(r)
         }
-        t.TapMessage(b.Addr(w.RemoteAddr()).
-            ToClientQuery())
+        t.TapMessage(b.Addr(w.RemoteAddr()).ToClientQuery())
     }
 
     // ...
