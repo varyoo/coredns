@@ -19,8 +19,7 @@ func toDnstap(ctx context.Context, host string, ex Exchanger, state request.Requ
 	}
 
 	// Query
-	b := msg.Builder{TimeSec: uint64(start.Unix())}
-	b.HostPort(host)
+	b := msg.New().Time(start).HostPort(host)
 
 	t := ex.Transport()
 	if t == "" {
@@ -42,7 +41,7 @@ func toDnstap(ctx context.Context, host string, ex Exchanger, state request.Requ
 		if tapper.Pack() {
 			b.Msg(reply)
 		}
-		tapper.TapMessage(b.Time(uint64(time.Now().Unix())).
+		tapper.TapMessage(b.Time(time.Now()).
 			ToOutsideResponse(tap.Message_FORWARDER_RESPONSE))
 	}
 }

@@ -28,26 +28,20 @@ type Tapper interface {
 // Single request use.
 // SendOption configures Dnstap to selectively send Dnstap messages. Default is send all.
 type ResponseWriter struct {
-	queryEpoch uint64
+	QueryEpoch time.Time
 	Query      *dns.Msg
 	dns.ResponseWriter
 	Tapper
-	err  error
 	Send *SendOption
-}
-
-// SetQueryEpoch sets the query epoch as reported by dnstap.
-func (w *ResponseWriter) SetQueryEpoch() {
-	w.queryEpoch = uint64(time.Now().Unix())
 }
 
 // WriteMsg writes back the response to the client and THEN works on logging the request
 // and response to dnstap.
 func (w *ResponseWriter) WriteMsg(resp *dns.Msg) (writeErr error) {
 	writeErr = w.ResponseWriter.WriteMsg(resp)
-	writeEpoch := uint64(time.Now().Unix())
+	writeEpoch := time.Now()
 
-	b := msg.Builder{TimeSec: w.queryEpoch}
+	b := msg.New().Time(w.QueryEpoch)
 
 	if w.Send == nil || w.Send.Cq {
 		if w.Pack() {

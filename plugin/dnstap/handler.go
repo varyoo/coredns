@@ -1,6 +1,8 @@
 package dnstap
 
 import (
+	"time"
+
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/dnstap/taprw"
 
@@ -77,8 +79,13 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	sendOption := taprw.SendOption{Cq: true, Cr: true}
 	newCtx := context.WithValue(ctx, DnstapSendOption, &sendOption)
 
-	rw := &taprw.ResponseWriter{ResponseWriter: w, Tapper: &h, Query: r, Send: &sendOption}
-	rw.SetQueryEpoch()
+	rw := &taprw.ResponseWriter{
+		ResponseWriter: w,
+		Tapper:         &h,
+		Query:          r,
+		Send:           &sendOption,
+		QueryEpoch:     time.Now(),
+	}
 
 	code, err := plugin.NextOrFailure(h.Name(), h.Next, tapContext{newCtx, h}, rw, r)
 	if err != nil {

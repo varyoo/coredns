@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"time"
 
 	tap "github.com/dnstap/golang-dnstap"
 	"github.com/miekg/dns"
@@ -17,7 +18,13 @@ type Builder struct {
 	Address     net.IP
 	Port        uint32
 	TimeSec     uint64
-	err         error
+
+	err error
+}
+
+// New returns a new Builder
+func New() *Builder {
+	return &Builder{}
 }
 
 // Addr adds the remote address to the message.
@@ -86,17 +93,13 @@ func (b *Builder) HostPort(addr string) *Builder {
 }
 
 // Time adds the timestamp to the message.
-func (b *Builder) Time(ts uint64) *Builder {
-	b.TimeSec = ts
+func (b *Builder) Time(ts time.Time) *Builder {
+	b.TimeSec = uint64(ts.Unix())
 	return b
 }
 
 // ToClientResponse transforms Data into a client response message.
 func (b *Builder) ToClientResponse() (*tap.Message, error) {
-	if b.err != nil {
-		return nil, b.err
-	}
-
 	t := tap.Message_CLIENT_RESPONSE
 	return &tap.Message{
 		Type:            &t,
@@ -106,15 +109,11 @@ func (b *Builder) ToClientResponse() (*tap.Message, error) {
 		ResponseMessage: b.Packed,
 		QueryAddress:    b.Address,
 		QueryPort:       &b.Port,
-	}, nil
+	}, b.err
 }
 
 // ToClientQuery transforms Data into a client query message.
 func (b *Builder) ToClientQuery() (*tap.Message, error) {
-	if b.err != nil {
-		return nil, b.err
-	}
-
 	t := tap.Message_CLIENT_QUERY
 	return &tap.Message{
 		Type:           &t,
@@ -124,15 +123,11 @@ func (b *Builder) ToClientQuery() (*tap.Message, error) {
 		QueryMessage:   b.Packed,
 		QueryAddress:   b.Address,
 		QueryPort:      &b.Port,
-	}, nil
+	}, b.err
 }
 
 // ToOutsideQuery transforms the data into a forwarder or resolver query message.
 func (b *Builder) ToOutsideQuery(t tap.Message_Type) (*tap.Message, error) {
-	if b.err != nil {
-		return nil, b.err
-	}
-
 	return &tap.Message{
 		Type:            &t,
 		SocketFamily:    &b.SocketFam,
@@ -141,15 +136,11 @@ func (b *Builder) ToOutsideQuery(t tap.Message_Type) (*tap.Message, error) {
 		QueryMessage:    b.Packed,
 		ResponseAddress: b.Address,
 		ResponsePort:    &b.Port,
-	}, nil
+	}, b.err
 }
 
 // ToOutsideResponse transforms the data into a forwarder or resolver response message.
 func (b *Builder) ToOutsideResponse(t tap.Message_Type) (*tap.Message, error) {
-	if b.err != nil {
-		return nil, b.err
-	}
-
 	return &tap.Message{
 		Type:            &t,
 		SocketFamily:    &b.SocketFam,
@@ -158,5 +149,5 @@ func (b *Builder) ToOutsideResponse(t tap.Message_Type) (*tap.Message, error) {
 		ResponseMessage: b.Packed,
 		ResponseAddress: b.Address,
 		ResponsePort:    &b.Port,
-	}, nil
+	}, b.err
 }

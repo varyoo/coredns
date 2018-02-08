@@ -52,13 +52,7 @@ func TestDnstap(t *testing.T) {
 			mwtest.A("example.org. 3600	IN	A 10.0.0.1"),
 		},
 	}.Msg()
-	tapq, err := test.TestingData().ToClientQuery()
-	if err != nil {
-		t.Fatal("Testing data must build", err)
-	}
-	tapr, err := test.TestingData().ToClientResponse()
-	if err != nil {
-		t.Fatal("Testing data must build", err)
-	}
+	tapq, _ := test.TestingData().ToClientQuery()
+	tapr, _ := test.TestingData().ToClientResponse()
 	testCase(t, tapq, tapr, q, r)
 }
