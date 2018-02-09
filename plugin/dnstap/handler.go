@@ -53,7 +53,7 @@ func TapperFromContext(ctx context.Context) (t Tapper) {
 }
 
 // TapMessage implements Tapper.
-func (h Dnstap) TapMessage(m *tap.Message, err error) {
+func (h *Dnstap) TapMessage(m *tap.Message, err error) {
 	if err != nil {
 		h.err = err
 		return
@@ -94,7 +94,7 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 	}
 
 	if h.err != nil {
-		return code, plugin.Error("dnstap", err)
+		return code, plugin.Error("dnstap", h.err)
 	}
 
 	return code, nil
