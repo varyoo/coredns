@@ -34,22 +34,22 @@ func toDnstap(ctx context.Context, host string, ex Exchanger, state request.Requ
 	if tapper.Pack() {
 		b.Msg(state.Req)
 	}
-	if m, err := b.ToOutsideQuery(tap.Message_FORWARDER_QUERY); err != nil {
+	m, err := b.ToOutsideQuery(tap.Message_FORWARDER_QUERY)
+	if err != nil {
 		return err
-	} else {
-		tapper.TapMessage(m)
 	}
+	tapper.TapMessage(m)
 
 	// Response
 	if reply != nil {
 		if tapper.Pack() {
 			b.Msg(reply)
 		}
-		if m, err := b.Time(time.Now()).ToOutsideResponse(tap.Message_FORWARDER_RESPONSE); err != nil {
+		m, err := b.Time(time.Now()).ToOutsideResponse(tap.Message_FORWARDER_RESPONSE)
+		if err != nil {
 			return err
-		} else {
-			tapper.TapMessage(m)
 		}
+		tapper.TapMessage(m)
 	}
 
 	return nil
