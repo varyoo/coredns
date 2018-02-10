@@ -18,8 +18,6 @@ type Dnstap struct {
 
 	// Set to true to include the relevant raw DNS message into the dnstap messages.
 	JoinRawMessage bool
-
-	err error
 }
 
 type (
@@ -29,7 +27,7 @@ type (
 	}
 	// Tapper is implemented by the Context passed by the dnstap handler.
 	Tapper interface {
-		TapMessage(message *tap.Message, errorWhileBuildingMessage error)
+		TapMessage(message *tap.Message)
 		Pack() bool
 	}
 	tapContext struct {
@@ -53,12 +51,7 @@ func TapperFromContext(ctx context.Context) (t Tapper) {
 }
 
 // TapMessage implements Tapper.
-func (h *Dnstap) TapMessage(m *tap.Message, err error) {
-	if err != nil {
-		h.err = err
-		return
-	}
-
+func (h *Dnstap) TapMessage(m *tap.Message) {
 	t := tap.Dnstap_MESSAGE
 	h.IO.Dnstap(tap.Dnstap{
 		Type:    &t,
@@ -93,8 +86,8 @@ func (h Dnstap) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 		return code, err
 	}
 
-	if h.err != nil {
-		return code, plugin.Error("dnstap", h.err)
+	if err = rw.DnstapError(); err != nil {
+		return code, plugin.Error("dnstap", err)
 	}
 
 	return code, nil

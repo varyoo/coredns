@@ -3,6 +3,7 @@
 package taprw
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/coredns/coredns/plugin/dnstap/msg"
@@ -20,7 +21,7 @@ type SendOption struct {
 
 // Tapper is what ResponseWriter needs to log to dnstap.
 type Tapper interface {
-	TapMessage(*tap.Message, error)
+	TapMessage(*tap.Message)
 	Pack() bool
 }
 
@@ -33,6 +34,13 @@ type ResponseWriter struct {
 	dns.ResponseWriter
 	Tapper
 	Send *SendOption
+
+	dnstapErr error
+}
+
+// DnstapError check if a dnstap error occurred during Write and returns it.
+func (w *ResponseWriter) DnstapError() error {
+	return w.dnstapErr
 }
 
 // WriteMsg writes back the response to the client and THEN works on logging the request
@@ -41,13 +49,17 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) (writeErr error) {
 	writeErr = w.ResponseWriter.WriteMsg(resp)
 	writeEpoch := time.Now()
 
-	b := msg.New().Time(w.QueryEpoch)
+	b := msg.New().Time(w.QueryEpoch).Addr(w.RemoteAddr())
 
 	if w.Send == nil || w.Send.Cq {
 		if w.Pack() {
 			b.Msg(w.Query)
 		}
-		w.TapMessage(b.Addr(w.ResponseWriter.RemoteAddr()).ToClientQuery())
+		if m, err := b.ToClientQuery(); err != nil {
+			w.dnstapErr = fmt.Errorf("client query: %s", err)
+		} else {
+			w.TapMessage(m)
+		}
 	}
 
 	if w.Send == nil || w.Send.Cr {
@@ -55,7 +67,11 @@ func (w *ResponseWriter) WriteMsg(resp *dns.Msg) (writeErr error) {
 			if w.Pack() {
 				b.Msg(resp)
 			}
-			w.TapMessage(b.Time(writeEpoch).ToClientResponse())
+			if m, err := b.Time(writeEpoch).ToClientResponse(); err != nil {
+				w.dnstapErr = fmt.Errorf("client response: %s", err)
+			} else {
+				w.TapMessage(m)
+			}
 		}
 	}
 

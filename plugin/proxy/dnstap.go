@@ -12,10 +12,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-func toDnstap(ctx context.Context, host string, ex Exchanger, state request.Request, reply *dns.Msg, start time.Time) {
+func toDnstap(ctx context.Context, host string, ex Exchanger, state request.Request, reply *dns.Msg, start time.Time) error {
 	tapper := dnstap.TapperFromContext(ctx)
 	if tapper == nil {
-		return
+		return nil
 	}
 
 	// Query
@@ -34,14 +34,23 @@ func toDnstap(ctx context.Context, host string, ex Exchanger, state request.Requ
 	if tapper.Pack() {
 		b.Msg(state.Req)
 	}
-	tapper.TapMessage(b.ToOutsideQuery(tap.Message_FORWARDER_QUERY))
+	if m, err := b.ToOutsideQuery(tap.Message_FORWARDER_QUERY); err != nil {
+		return err
+	} else {
+		tapper.TapMessage(m)
+	}
 
 	// Response
 	if reply != nil {
 		if tapper.Pack() {
 			b.Msg(reply)
 		}
-		tapper.TapMessage(b.Time(time.Now()).
-			ToOutsideResponse(tap.Message_FORWARDER_RESPONSE))
+		if m, err := b.Time(time.Now()).ToOutsideResponse(tap.Message_FORWARDER_RESPONSE); err != nil {
+			return err
+		} else {
+			tapper.TapMessage(m)
+		}
 	}
+
+	return nil
 }

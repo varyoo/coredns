@@ -2,6 +2,8 @@ package dnstap
 
 import (
 	"errors"
+	"net"
+	"strings"
 	"testing"
 
 	"github.com/coredns/coredns/plugin"
@@ -66,9 +68,29 @@ func (n noWriter) Dnstap(d tap.Dnstap) {
 }
 
 func endWith(c int, err error) plugin.Handler {
-	return mwtest.HandlerFunc(func(_ context.Context, _ dns.ResponseWriter, _ *dns.Msg) (int, error) {
+	return mwtest.HandlerFunc(func(_ context.Context, w dns.ResponseWriter, _ *dns.Msg) (int, error) {
+		w.WriteMsg(nil) // trigger plugin dnstap to log client query and response
+		// maybe dnstap should log the client query when no message is written...
 		return c, err
 	})
+}
+
+type badAddr struct {
+}
+
+func (bad badAddr) Network() string {
+	return "bad network"
+}
+func (bad badAddr) String() string {
+	return "bad address"
+}
+
+type badRW struct {
+	dns.ResponseWriter
+}
+
+func (bad *badRW) RemoteAddr() net.Addr {
+	return badAddr{}
 }
 
 func TestError(t *testing.T) {
@@ -77,21 +99,19 @@ func TestError(t *testing.T) {
 		IO:             noWriter{},
 		JoinRawMessage: false,
 	}
-	dnstapErr := errors.New("dnstap error")
-	pluginErr := errors.New("plugin error")
+	rw := &badRW{&mwtest.ResponseWriter{}}
 
 	// the dnstap error will show only if there is no plugin error
-	h.TapMessage(nil, dnstapErr)
-	_, err := h.ServeDNS(context.TODO(), nil, nil)
-	if err.Error() != plugin.Error("dnstap", dnstapErr).Error() {
-		t.Fatal("must return the dnstap error")
+	_, err := h.ServeDNS(context.TODO(), rw, nil)
+	if err == nil || !strings.HasPrefix(err.Error(), "plugin/dnstap") {
+		t.Fatal("must return the dnstap error but have:", err)
 	}
 
-	// the plugin error will always overwrite any dnstap error
+	// plugin errors will always overwrite dnstap errors
+	pluginErr := errors.New("plugin error")
 	h.Next = endWith(0, pluginErr)
-	h.TapMessage(nil, dnstapErr) // just to be sure
-	_, err = h.ServeDNS(context.TODO(), nil, nil)
+	_, err = h.ServeDNS(context.TODO(), rw, nil)
 	if err != pluginErr {
-		t.Fatal("must return the plugin error")
+		t.Fatal("must return the plugin error but have:", err)
 	}
 }
