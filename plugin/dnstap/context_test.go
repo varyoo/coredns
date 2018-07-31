@@ -10,6 +10,6 @@ func TestDnstapContext(t *testing.T) {
 	tapper := TapperFromContext(ctx)
 
 	if tapper == nil {
-		t.Fatal("can't get tapper")
+		t.Fatal("Can't get tapper")
 	}
 }
