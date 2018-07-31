@@ -114,12 +114,18 @@ func (p *Proxy) Connect(ctx context.Context, state request.Request, opts options
 
 	conn.SetReadDeadline(time.Now().Add(p.readTimeout()))
 	ret, err := conn.ReadMsg()
+
+	taperr := logToDnstap(ctx, p.transport.addr, proto, state.Req, ret, start)
+
+	// check for error from previous call to conn.ReadMsg()
 	if err != nil {
 		p.updateRtt(maxTimeout)
 		conn.Close() // not giving it back
 		if err == io.EOF && cached {
 			return nil, ErrCachedClosed
 		}
+
+		// Connect have priority over dnstap errors
 		return ret, err
 	}
 
@@ -136,7 +142,8 @@ func (p *Proxy) Connect(ctx context.Context, state request.Request, opts options
 	RcodeCount.WithLabelValues(rc, p.addr).Add(1)
 	RequestDuration.WithLabelValues(p.addr).Observe(time.Since(start).Seconds())
 
-	return ret, nil
+	// no Connect error, return the dnstap error instead
+	return ret, taperr
 }
 
 const cumulativeAvgWeight = 4
