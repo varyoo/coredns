@@ -28,9 +28,8 @@ func TestDnstap(t *testing.T) {
 		IO:             trap,
 	}
 
-	ret := new(dns.Msg)
-
 	s := dnstest.NewServer(func(w dns.ResponseWriter, r *dns.Msg) {
+		ret := new(dns.Msg)
 		ret.SetReply(r)
 		ret.Answer = append(ret.Answer, test.A("example.org. IN A 127.0.0.1"))
 		w.WriteMsg(ret)
@@ -67,7 +66,7 @@ func TestDnstap(t *testing.T) {
 		t.Fatal("No forwarder response captured")
 	}
 
-	compareMsg(t, resp.ResponseMessage, ret)
+	compareMsg(t, resp.ResponseMessage, rec.Msg)
 }
 
 func compareMsg(t *testing.T, have []byte, want *dns.Msg) {
