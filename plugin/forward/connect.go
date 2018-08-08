@@ -115,7 +115,7 @@ func (p *Proxy) Connect(ctx context.Context, state request.Request, opts options
 	conn.SetReadDeadline(time.Now().Add(p.readTimeout()))
 	ret, err := conn.ReadMsg()
 
-	taperr := logToDnstap(ctx, p.transport.addr, proto, state.Req, ret, start)
+	taperr := logToDnstap(ctx, conn.RemoteAddr(), state.Req, ret, reqTime)
 
 	// check for error from previous call to conn.ReadMsg()
 	if err != nil {

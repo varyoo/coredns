@@ -2,6 +2,7 @@ package forward
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/coredns/coredns/plugin/dnstap"
@@ -11,19 +12,13 @@ import (
 	"github.com/miekg/dns"
 )
 
-func logToDnstap(ctx context.Context, host, proto string, req, ret *dns.Msg, start time.Time) error {
+func logToDnstap(ctx context.Context, addr net.Addr, req, ret *dns.Msg, reqTime time.Time) error {
 	t := dnstap.TapperFromContext(ctx)
 	if t == nil {
 		return nil
 	}
 
-	b := msg.New().Time(start).HostPort(host)
-
-	if proto == "tcp" {
-		b.SocketProto = tap.SocketProtocol_TCP
-	} else {
-		b.SocketProto = tap.SocketProtocol_UDP
-	}
+	b := msg.New().Time(reqTime).Addr(addr)
 
 	if t.Pack() {
 		b.Msg(req)
